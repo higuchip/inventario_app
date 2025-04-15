@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visualizar Árvores</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .project-info {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .button-group button {
+      flex: 1;
+      min-width: 120px;
+    }
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .back-btn {
+      background-color: #607D8B;
+      color: white;
+    }
+    .add-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .export-csv-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      min-width: 800px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+    }
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+    .action-btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 5px;
+      font-size: 14px;
+    }
+    .edit-btn {
+      background-color: #2196F3;
+      color: white;
+    }
+    .delete-btn {
+      background-color: #F44336;
+      color: white;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 1000;
+    }
+    .modal-content {
+      background-color: white;
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 500px;
+      box-sizing: border-box;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .modal-actions button {
+      padding: 10px 20px;
+    }
+    /* Estilo para as notificações toast */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      left: 20px;
+      z-index: 1000;
+    }
+    .toast {
+      background-color: #fff;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      padding: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      animation: slideIn 0.3s ease-out;
+    }
+    .toast.success {
+      border-left: 4px solid #4CAF50;
+    }
+    .toast.error {
+      border-left: 4px solid #F44336;
+    }
+    .toast.warning {
+      border-left: 4px solid #FFC107;
+    }
+    .toast-icon {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+    .toast-content {
+      flex-grow: 1;
+    }
+    .toast-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-left: 10px;
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 15px;
+      }
+      .button-group {
+        flex-direction: column;
+      }
+      .button-group button {
+        width: 100%;
+      }
+      .modal-content {
+        margin: 10% auto;
+        padding: 15px;
+      }
+      .action-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="container">
+    <div class="project-info">
+      <h2 id="projectTitle">Carregando informações do projeto...</h2>
+    </div>
+
+    <div class="button-group">
+      <button class="add-tree-btn" onclick="addNewTree()">Nova Árvore</button>
+      <button class="export-csv-btn" onclick="exportToCSV()">Exportar CSV</button>
+      <button class="back-btn" onclick="window.location.href='project.html'">Voltar</button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Parcela</th>
+            <th>Espécie</th>
+            <th>CAP (cm)</th>
+            <th>Altura (m)</th>
+            <th>Coordenadas</th>
+            <th>Data de Registro</th>
+            <th>Observação</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="treesTableBody">
+          <tr>
+            <td colspan="8">Carregando árvores...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal para confirmar exclusão -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h3>Confirmar Exclusão</h3>
+      <p>Tem certeza que deseja excluir esta árvore?</p>
+      <div class="modal-actions">
+        <button onclick="closeDeleteModal()">Cancelar</button>
+        <button class="delete-btn" onclick="confirmDelete()">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let db;
+    let currentProjectId = null;
+    let currentTreeId = null;
+    const request = indexedDB.open('InventarioDB', 1);
+
+    // Função para mostrar notificações toast
+    function showToast(message, type = 'success') {
+      const toastContainer = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : '⚠';
+      
+      toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <div class="toast-content">${message}</div>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
+      // Remove a notificação após 5 segundos
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 5000);
+    }
+
+    request.onerror = function(event) {
+      console.error('Erro ao abrir o banco de dados:', event.target.error);
+      showToast('Não foi possível iniciar o banco de dados local.', 'error');
+    };
+
+    request.onsuccess = function(event) {
+      db = event.target.result;
+      console.log('Banco de dados aberto com sucesso');
+
+      currentProjectId = localStorage.getItem('currentProjectId');
+      if (!currentProjectId) {
+        showToast('Nenhum projeto selecionado. Redirecionando...', 'warning');
+        setTimeout(() => window.location.href = 'project.html', 2000);
+        return;
+      }
+
+      loadProjectInfo();
+      loadTrees();
+    };
+
+    function loadProjectInfo() {
+      const transaction = db.transaction(['projetos'], 'readonly');
+      const store = transaction.objectStore('projetos');
+      const request = store.get(parseInt(currentProjectId));
+
+      request.onsuccess = function() {
+        const projeto = request.result;
+        if (!projeto) {
+          showToast('Projeto não encontrado. Redirecionando...', 'error');
+          setTimeout(() => window.location.href = 'project.html', 2000);
+          return;
+        }
+
+        document.getElementById('projectTitle').textContent = 
+          `Projeto: ${projeto.area} - ${projeto.ano}`;
+      };
+    }
+
+    function loadTrees() {
+      const transaction = db.transaction(['arvores'], 'readonly');
+      const store = transaction.objectStore('arvores');
+      const index = store.index('projetoId');
+      const request = index.getAll(parseInt(currentProjectId));
+
+      request.onsuccess = function() {
+        const arvores = request.result;
+        const tbody = document.getElementById('treesTableBody');
+        tbody.innerHTML = '';
+
+        if (arvores.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8">Nenhuma árvore registrada para este projeto.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        arvores.forEach(arvore => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${arvore.parcela}</td>
+            <td>${arvore.especie}</td>
+            <td>${arvore.cap}</td>
+            <td>${arvore.altura || '-'}</td>
+            <td>${arvore.coordenadas || '-'}</td>
+            <td>${new Date(arvore.dataRegistro).toLocaleString()}</td>
+            <td>${arvore.observacao || '-'}</td>
+            <td>
+              <button class="action-btn edit-btn" onclick="editTree(${arvore.id})">Editar</button>
+              <button class="action-btn delete-btn" onclick="deleteTree(${arvore.id})">Excluir</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      };
+    }
+
+    function addNewTree() {
+      // Remove qualquer ID de árvore existente para garantir que seja um novo cadastro
+      localStorage.removeItem('currentTreeId');
+      // Mantém o ID do projeto atual
+      window.location.href = 'inventory.html';
+    }
+
+    function editTree(id) {
+      localStorage.setItem('currentTreeId', id);
+      window.location.href = 'inventory.html';
+    }
+
+    function deleteTree(id) {
+      currentTreeId = id;
+      document.getElementById('deleteModal').style.display = 'block';
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').style.display = 'none';
+      currentTreeId = null;
+    }
+
+    function confirmDelete() {
+      if (!currentTreeId) return;
+
+      const transaction = db.transaction(['arvores'], 'readwrite');
+      const store = transaction.objectStore('arvores');
+      const request = store.delete(currentTreeId);
+
+      request.onsuccess = function() {
+        showToast('Árvore excluída com sucesso!');
+        closeDeleteModal();
+        loadTrees();
+      };
+
+      request.onerror = function(event) {
+        console.error('Erro ao excluir árvore:', event.target.error);
+        showToast('Erro ao excluir a árvore. Por favor, tente novamente.', 'error');
+      };
+    }
+
+    function exportToCSV() {
+      const transaction = db.transaction(['arvores'], 'readonly');
+      const store = transaction.objectStore('arvores');
+      const index = store.index('projetoId');
+      const projectId = parseInt(currentProjectId);
+      const request = index.getAll(projectId);
+
+      request.onsuccess = function() {
+        const arvores = request.result;
+        if (arvores.length === 0) {
+          showToast('Não há dados para exportar.', 'error');
+          return;
+        }
+
+        // Adiciona BOM para UTF-8
+        let csvContent = '\ufeff';
+        
+        // Cabeçalho do CSV
+        csvContent += 'Parcela;Espécie;CAP;Altura;Latitude;Longitude;Data de Registro;Observação\n';
+
+        // Adiciona cada árvore como uma linha no CSV
+        arvores.forEach(arvore => {
+          const cap = arvore.cap ? arvore.cap.toString().replace('.', ',') : '';
+          const altura = arvore.altura ? arvore.altura.toString().replace('.', ',') : '';
+          
+          // Extrai latitude e longitude das coordenadas
+          let latitude = '', longitude = '';
+          if (arvore.coordenadas) {
+            const coords = arvore.coordenadas.split(',');
+            if (coords.length === 2) {
+              latitude = coords[0].trim().replace('.', ',');
+              longitude = coords[1].trim().replace('.', ',');
+            }
+          }
+
+          const dataRegistro = arvore.dataRegistro ? new Date(arvore.dataRegistro).toLocaleString() : '';
+          const observacao = arvore.observacao || '';
+
+          // Garante que strings com ponto e vírgula sejam envolvidas em aspas duplas
+          const especie = arvore.especie.includes(';') ? `"${arvore.especie}"` : arvore.especie;
+          const obsFormatada = observacao.includes(';') ? `"${observacao}"` : observacao;
+
+          csvContent += `${arvore.parcela};${especie};${cap};${altura};${latitude};${longitude};${dataRegistro};${obsFormatada}\n`;
+        });
+
+        // Cria o arquivo e faz o download com encoding UTF-8
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const projetoTransaction = db.transaction(['projetos'], 'readonly');
+        const projetoStore = projetoTransaction.objectStore('projetos');
+        const projetoRequest = projetoStore.get(projectId);
+
+        projetoRequest.onsuccess = function() {
+          const projeto = projetoRequest.result;
+          if (!projeto) {
+            showToast('Projeto não encontrado.', 'error');
+            return;
+          }
+
+          const fileName = `inventario_${projeto.area}_${projeto.ano}.csv`;
+          
+          link.setAttribute('href', url);
+          link.setAttribute('download', fileName);
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          showToast('Dados exportados com sucesso!', 'success');
+        };
+      };
+
+      request.onerror = function(event) {
+        console.error('Erro ao exportar dados:', event.target.error);
+        showToast('Erro ao exportar dados. Por favor, tente novamente.', 'error');
+      };
+    }
+  </script>
+</body>
+</html> 
