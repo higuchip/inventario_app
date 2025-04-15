@@ -53,7 +53,7 @@ Este projeto foi desenvolvido, pensando nas necessidades de engenheiros floresta
 ### 1. Acesso via Navegador
 
 * Acesse o aplicativo através da URL do GitHub Pages:
-    * [**https://higuchip.github.io/inventario_app/project.html**](https://higuchip.github.io/inventario_app/project.html)
+    * [**https://higuchip.github.io/inventario_app/index.html**](https://higuchip.github.io/inventario_app/index.html)
     *(Nota: O link atual aponta para `project.html`. O ideal é que o link principal seja para `index.html` que redireciona, ou que o `start_url` no manifest seja ajustado se `project.html` for o ponto de entrada desejado após a instalação.)*
 
 ### 2. Instalação (Recomendado para Offline)
