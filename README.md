@@ -11,7 +11,7 @@ Este projeto foi desenvolvido, pensando nas necessidades de engenheiros floresta
 
 ## ⚠️ **Status Atual: BETA / EXPERIMENTAL** ⚠️
 
-**Data da Última Revisão Deste README:** 15 de abril de 2025
+**Data da Última Revisão Deste README:** 16 de abril de 2025
 
 **ATENÇÃO:** Este aplicativo está em fase de desenvolvimento e testes (Beta). **NÃO HÁ GARANTIAS** de funcionamento perfeito ou de preservação dos dados inseridos. Podem ocorrer bugs, perda de dados ou comportamento inesperado.
 
@@ -54,7 +54,7 @@ Este projeto foi desenvolvido, pensando nas necessidades de engenheiros floresta
 
 * Acesse o aplicativo através da URL do GitHub Pages:
     * [**https://higuchip.github.io/inventario_app/index.html**](https://higuchip.github.io/inventario_app/index.html)
-    
+
 ### 2. Instalação (Recomendado para Offline)
 
 * **No Celular (Android/iOS):**
@@ -170,6 +170,30 @@ Após acessar ou instalar o aplicativo:
 * O aplicativo carregará a partir dos arquivos salvos no cache.
 * Você poderá criar projetos, adicionar/editar/visualizar árvores e todos os dados serão salvos localmente no IndexedDB.
 * **Nota:** A função "Obter GPS" só funcionará offline se o seu dispositivo conseguir obter um sinal de GPS sem depender de redes assistidas (A-GPS), o que pode variar. A exportação para CSV requer que o aplicativo esteja carregado, mas não necessariamente conexão ativa no momento do clique (pois os dados são locais).
+
+---
+
+## Solução de Problemas (Troubleshooting)
+
+Encontrou algum comportamento inesperado na aplicação, seja acessando pelo navegador ou usando o aplicativo instalado (PWA)? Tente os seguintes passos:
+
+1.  **Fechar e Reabrir / Recarregar:**
+    * **Se estiver usando o PWA instalado:** Feche completamente a janela do aplicativo e abra-o novamente.
+    * **Se estiver usando no navegador:** Tente recarregar a página (F5 ou Ctrl+R / Cmd+R).
+2.  **Recarregamento Forçado (Hard Refresh - Principalmente para uso no Navegador):** Force o navegador a ignorar o cache local. Pressione `Ctrl+Shift+R` (Windows/Linux) ou `Cmd+Shift+R` (Mac). Com as Ferramentas do Desenvolvedor (F12) abertas, você também pode clicar e segurar o botão de recarregar e escolher "Esvaziar cache e recarregamento forçado".
+3.  **Verificar o Console (Usuários Técnicos / Navegador):** Abra as Ferramentas do Desenvolvedor (`F12`) e vá para a aba "Console". Procure por mensagens de erro (em vermelho) que possam indicar o problema.
+4.  **Desinstalar e Reinstalar o PWA (Para App Instalado):** Se estiver usando o PWA instalado e os problemas persistirem, desinstalar e reinstalar o aplicativo pode resolver.
+    * **⚠️ ATENÇÃO:** Conforme avisado na seção "Como Desinstalar o Aplicativo", esta ação **APAGARÁ PERMANENTEMENTE** todos os projetos e árvores que você cadastrou localmente. Certifique-se de ter backups (CSV)!
+    * Siga as instruções de desinstalação para seu sistema (Android, iOS, Desktop) na seção correspondente do README. Após desinstalar, instale o PWA novamente.
+5.  **Limpar Dados do Site Manualmente (Alternativa / Navegador):** Como alternativa à reinstalação do PWA ou para problemas no navegador, você pode limpar os dados manualmente.
+    * Abra as Ferramentas do Desenvolvedor (`F12`).
+    * Vá para a aba "Application" (Aplicativo) -> "Storage" (Armazenamento).
+    * Clique no botão **"Clear site data"** (Limpar dados do site).
+    * **⚠️ ATENÇÃO:** Esta ação também **APAGARÁ PERMANENTEMENTE** todos os dados locais. Faça backup (CSV)!
+    * Após limpar, recarregue a página ou reabra o PWA.
+6.  **Desativar Extensões (Menos comum para PWA):** Extensões do navegador podem interferir. Tente desativá-las temporariamente.
+
+Se o problema persistir após seguir estes passos, considere reportar um erro (veja a seção "Desenvolvedor, Contribuição e Reportar Erros").
 
 ---
 
