@@ -201,6 +201,11 @@
       </div>
 
       <div class="form-group">
+        <label for="idArvoreUsuario">ID da Árvore (único):</label>
+        <input type="text" id="idArvoreUsuario" required>
+      </div>
+
+      <div class="form-group">
         <label for="coordenadas">Coordenadas:</label>
         <div class="gps-container">
           <input type="text" id="coordenadas" readonly>
@@ -484,6 +489,42 @@
     }
     
     function loadTreeData() {
+      if (!db || !currentTreeId) {
+        console.error('loadTreeData: DB não disponível ou ID da árvore não fornecido');
+        return;
+      }
+      
+      try {
+        const transaction = db.transaction(['arvores'], 'readonly');
+        const store = transaction.objectStore('arvores');
+        const request = store.get(parseInt(currentTreeId));
+
+        request.onsuccess = function() {
+          const arvore = request.result;
+          if (!arvore) {
+            showToast('Árvore não encontrada. Redirecionando...', 'error');
+            setTimeout(() => window.location.href = 'view_trees.html', 2000);
+            return;
+          }
+
+          document.getElementById('parcela').value = arvore.parcela || '';
+          document.getElementById('idArvoreUsuario').value = arvore.idArvoreUsuario || '';
+          document.getElementById('especie').value = arvore.especie || '';
+          document.getElementById('cap').value = arvore.cap || '';
+          document.getElementById('altura').value = arvore.altura || '';
+          document.getElementById('coordenadas').value = arvore.coordenadas || '';
+          document.getElementById('observacao').value = arvore.observacao || '';
+          document.getElementById('save-update-btn').textContent = 'Atualizar Árvore';
+        };
+
+        request.onerror = function(event) {
+          console.error('Erro ao carregar dados da árvore:', event.target.error);
+          showToast('Erro ao carregar dados. Tente novamente.', 'error');
+        };
+      } catch (error) {
+        console.error('Erro em loadTreeData:', error);
+        showToast('Erro ao acessar o banco de dados', 'error');
+      }
     }
     
     function showToast(message, type = 'success') {
@@ -589,7 +630,8 @@
         if (!form.dataset.listenerAttached) {
              form.addEventListener('submit', function handleFormSubmit(event) {
                 event.preventDefault();
-                
+                               
+                const idArvoreUsuarioValue = document.getElementById('idArvoreUsuario').value.trim();
                 const especieValue = document.getElementById('especie').value.trim();
                 const capValue = parseFloat(document.getElementById('cap').value);
                 const alturaInput = document.getElementById('altura').value;
@@ -599,6 +641,13 @@
                    showToast('O campo Espécie é obrigatório.', 'error');
                    return;
                 }
+                // Validar o Id da Arvore (se for informado)
+                if (idArvoreUsuarioValue === '') {
+                   // Esta validação é uma segurança extra, 'required' deve pegar antes
+                   showToast('O campo ID da Árvore é obrigatório.', 'error');
+                   return;
+                }
+                // Validar o CAP
                 if (isNaN(capValue)) {
                     showToast('Valor inválido para CAP.', 'error');
                     return;
@@ -609,7 +658,8 @@
                 }
         
                 const arvore = {
-                   parcela: document.getElementById('parcela').value,
+                   parcela: document.getElementById('parcela').value.trim(),
+                   idArvoreUsuario: idArvoreUsuarioValue,
                    especie: especieValue,
                    cap: capValue,
                    altura: alturaValue,

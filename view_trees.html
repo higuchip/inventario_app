@@ -213,6 +213,7 @@
         <thead>
           <tr>
             <th>Parcela</th>
+            <th>ID Árvore</th>
             <th>Espécie</th>
             <th>CAP (cm)</th>
             <th>Altura (m)</th>
@@ -224,7 +225,7 @@
         </thead>
         <tbody id="treesTableBody">
           <tr>
-            <td colspan="8">Carregando árvores...</td>
+            <td colspan="9">Carregando árvores...</td>
           </tr>
         </tbody>
       </table>
@@ -324,7 +325,7 @@
         if (arvores.length === 0) {
           tbody.innerHTML = `
             <tr>
-              <td colspan="8">Nenhuma árvore registrada para este projeto.</td>
+              <td colspan="9">Nenhuma árvore registrada para este projeto.</td>
             </tr>
           `;
           return;
@@ -334,6 +335,7 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${arvore.parcela}</td>
+            <td>${arvore.idArvoreUsuario || '-'}</td>
             <td>${arvore.especie}</td>
             <td>${arvore.cap}</td>
             <td>${arvore.altura || '-'}</td>
@@ -409,7 +411,7 @@
         let csvContent = '\ufeff';
         
         // Cabeçalho do CSV
-        csvContent += 'Parcela;Espécie;CAP;Altura;Latitude;Longitude;Data de Registro;Observação\n';
+        csvContent += 'Parcela;ID Árvore;Espécie;CAP;Altura;Latitude;Longitude;Data de Registro;Observação\n';
 
         // Adiciona cada árvore como uma linha no CSV
         arvores.forEach(arvore => {
@@ -433,7 +435,7 @@
           const especie = arvore.especie.includes(';') ? `"${arvore.especie}"` : arvore.especie;
           const obsFormatada = observacao.includes(';') ? `"${observacao}"` : observacao;
 
-          csvContent += `${arvore.parcela};${especie};${cap};${altura};${latitude};${longitude};${dataRegistro};${obsFormatada}\n`;
+          csvContent += `${arvore.parcela};${arvore.idArvoreUsuario || ''};${especie};${cap};${altura};${latitude};${longitude};${dataRegistro};${obsFormatada}\n`;
         });
 
         // Cria o arquivo e faz o download com encoding UTF-8
