@@ -226,6 +226,35 @@
         <input type="number" id="cap" step="0.1" required inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*">
       </div>
 
+      <!-- Novo bloco para troncos múltiplos -->
+      <div class="form-group">
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+          <input type="checkbox" id="troncoMultiplo" style="width: auto; margin-right: 10px;">
+          <label for="troncoMultiplo" style="display: inline; margin: 0;">Árvore com troncos múltiplos</label>
+        </div>
+        
+        <div id="troncoMultiploContainer" style="display: none;">
+          <div id="capsContainer">
+            <!-- Template para CAPs múltiplos -->
+            <div class="cap-item" style="display: flex; gap: 10px; margin-bottom: 8px;">
+              <input type="number" class="cap-value" step="0.1" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" 
+                     placeholder="CAP do tronco (cm)" style="flex: 1;">
+              <button type="button" class="remove-cap" style="width: auto; padding: 8px; background-color: #f44336;">✕</button>
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <button type="button" id="addCapBtn" style="width: auto; background-color: #2196F3; color: white;">+ Adicionar tronco</button>
+            <div style="text-align: right;">
+              <strong>CAP equivalente:</strong> <span id="capEquivalente">0</span> cm
+            </div>
+          </div>
+          <div style="font-size: 12px; color: #666; margin-top: 5px;">
+            Cálculo: CAP equivalente = √(soma dos CAPs ao quadrado)
+          </div>
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="altura">Altura (m):</label>
         <input type="number" id="altura" step="0.1" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*">
@@ -306,6 +335,9 @@
         alert('Erro: Elementos essenciais da página não foram encontrados.');
         return;
       }
+      
+      // Setup do gerenciamento de troncos múltiplos
+      setupTroncoMultiplo();
 
       // Tenta abrir o DB
       const request = indexedDB.open('InventarioDB', 1);
@@ -515,6 +547,26 @@
           document.getElementById('coordenadas').value = arvore.coordenadas || '';
           document.getElementById('observacao').value = arvore.observacao || '';
           document.getElementById('save-update-btn').textContent = 'Atualizar Árvore';
+          
+          // Carregar informações de troncos múltiplos, se existirem
+          if (arvore.troncoMultiplo === true && Array.isArray(arvore.capsIndividuais) && arvore.capsIndividuais.length > 0) {
+            document.getElementById('troncoMultiplo').checked = true;
+            document.getElementById('troncoMultiploContainer').style.display = 'block';
+            document.getElementById('cap').disabled = true;
+            
+            // Limpar e recriar os campos de CAP individuais
+            const capsContainer = document.getElementById('capsContainer');
+            capsContainer.innerHTML = '';
+            
+            // Adicionar cada CAP individual
+            arvore.capsIndividuais.forEach(cap => {
+              const capItem = addCapItem();
+              capItem.querySelector('.cap-value').value = cap;
+            });
+            
+            // Recalcular o CAP equivalente
+            calculateCapEquivalente();
+          }
         };
 
         request.onerror = function(event) {
@@ -636,6 +688,7 @@
                 const capValue = parseFloat(document.getElementById('cap').value);
                 const alturaInput = document.getElementById('altura').value;
                 let alturaValue = alturaInput ? parseFloat(alturaInput) : null;
+                const isTroncoMultiplo = document.getElementById('troncoMultiplo').checked;
         
                 if (especieValue === '') {
                    showToast('O campo Espécie é obrigatório.', 'error');
@@ -656,6 +709,32 @@
                     showToast('Valor inválido para Altura.', 'error');
                     return;
                 }
+                
+                // Coletar os valores individuais de CAP para troncos múltiplos
+                let capsIndividuais = [];
+                if (isTroncoMultiplo) {
+                    const capInputs = document.querySelectorAll('.cap-value');
+                    if (capInputs.length === 0) {
+                        showToast('Adicione pelo menos um CAP para tronco múltiplo.', 'error');
+                        return;
+                    }
+                    
+                    // Validar cada CAP individual
+                    let allValid = true;
+                    capInputs.forEach(input => {
+                        const val = parseFloat(input.value);
+                        if (isNaN(val) || val <= 0) {
+                            allValid = false;
+                        } else {
+                            capsIndividuais.push(val);
+                        }
+                    });
+                    
+                    if (!allValid || capsIndividuais.length === 0) {
+                        showToast('Todos os valores de CAP devem ser números positivos.', 'error');
+                        return;
+                    }
+                }
         
                 const arvore = {
                    parcela: document.getElementById('parcela').value.trim(),
@@ -666,7 +745,10 @@
                    coordenadas: document.getElementById('coordenadas').value || null,
                    observacao: document.getElementById('observacao').value || null,
                    projetoId: currentProjectId,
-                   dataRegistro: new Date().toISOString()
+                   dataRegistro: new Date().toISOString(),
+                   // Adicionar dados de troncos múltiplos
+                   troncoMultiplo: isTroncoMultiplo,
+                   capsIndividuais: isTroncoMultiplo ? capsIndividuais : []
                 };
         
                 if (!db) {
@@ -704,6 +786,98 @@
              });
              form.dataset.listenerAttached = 'true';
         }
+    }
+
+    function setupTroncoMultiplo() {
+      const troncoMultiploCheckbox = document.getElementById('troncoMultiplo');
+      const troncoMultiploContainer = document.getElementById('troncoMultiploContainer');
+      const capsContainer = document.getElementById('capsContainer');
+      const addCapBtn = document.getElementById('addCapBtn');
+      const capEquivalente = document.getElementById('capEquivalente');
+      const capInput = document.getElementById('cap');
+
+      if (!troncoMultiploCheckbox || !troncoMultiploContainer || !capsContainer || !addCapBtn || !capEquivalente) {
+        console.error('Erro: Elementos do tronco múltiplo não encontrados!');
+        return;
+      }
+
+      troncoMultiploCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+          troncoMultiploContainer.style.display = 'block';
+          capsContainer.innerHTML = '';
+          addCapBtn.style.display = 'block';
+          capEquivalente.textContent = '0';
+          // Adicionar pelo menos um campo de CAP
+          addCapItem();
+          // Desabilitar o campo de CAP padrão quando estiver no modo tronco múltiplo
+          capInput.disabled = true;
+        } else {
+          troncoMultiploContainer.style.display = 'none';
+          addCapBtn.style.display = 'none';
+          // Reabilitar o campo de CAP padrão
+          capInput.disabled = false;
+        }
+      });
+
+      addCapBtn.addEventListener('click', function() {
+        addCapItem();
+      });
+
+      capsContainer.addEventListener('click', function(event) {
+        if (event.target.classList.contains('remove-cap')) {
+          const capItem = event.target.parentElement;
+          capItem.remove();
+          calculateCapEquivalente();
+        }
+      });
+
+      // Escutar alterações nos valores de CAP
+      capsContainer.addEventListener('input', function(event) {
+        if (event.target.classList.contains('cap-value')) {
+          calculateCapEquivalente();
+        }
+      });
+
+      calculateCapEquivalente();
+    }
+
+    function addCapItem() {
+      const capsContainer = document.getElementById('capsContainer');
+      const newCapItem = document.createElement('div');
+      newCapItem.className = 'cap-item';
+      newCapItem.style = "display: flex; gap: 10px; margin-bottom: 8px;";
+      newCapItem.innerHTML = `
+        <input type="number" class="cap-value" step="0.1" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" 
+               placeholder="CAP do tronco (cm)" style="flex: 1;">
+        <button type="button" class="remove-cap" style="width: auto; padding: 8px; background-color: #f44336;">✕</button>
+      `;
+      capsContainer.appendChild(newCapItem);
+      return newCapItem;
+    }
+
+    function calculateCapEquivalente() {
+      const capValues = Array.from(document.querySelectorAll('.cap-value'))
+        .map(input => parseFloat(input.value) || 0)
+        .filter(val => !isNaN(val) && val > 0);
+      
+      // Se não houver valores válidos, o resultado é zero
+      if (capValues.length === 0) {
+        document.getElementById('capEquivalente').textContent = '0';
+        document.getElementById('cap').value = '';
+        return 0;
+      }
+      
+      // Calcula o CAP equivalente: raiz quadrada da soma dos quadrados
+      const sumOfSquares = capValues.reduce((sum, cap) => sum + Math.pow(cap, 2), 0);
+      const capEquivalente = Math.sqrt(sumOfSquares);
+      
+      // Atualiza a interface
+      document.getElementById('capEquivalente').textContent = capEquivalente.toFixed(2);
+      
+      // Atualiza o campo de CAP padrão com o valor equivalente calculado
+      document.getElementById('cap').value = capEquivalente.toFixed(2);
+      
+      return capEquivalente;
     }
   </script>
 </body>
