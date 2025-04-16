@@ -300,27 +300,104 @@
       document.getElementById('projectModal').style.display = 'none';
     }
 
-    document.getElementById('projectForm').addEventListener('submit', function(e) {
-      e.preventDefault();
+    document.getElementById('projectForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const areaInput = document.getElementById('area');
+      const anoInput = document.getElementById('ano');
       
-      const projeto = {
-        area: document.getElementById('area').value,
-        ano: parseInt(document.getElementById('ano').value)
-      };
+      // Gera o nome do projeto e remove espaços extras
+      const nomeProjeto = `${areaInput.value.trim()} - ${anoInput.value}`;
+      const anoProjeto = parseInt(anoInput.value);
+
+      // Validação básica (campos vazios são tratados pelo 'required' do HTML)
+      if (!nomeProjeto || isNaN(anoProjeto)) {
+          showToast('Preencha a área e o ano corretamente.', 'error');
+          return;
+      }
 
       const transaction = db.transaction(['projetos'], 'readwrite');
       const store = transaction.objectStore('projetos');
-      const request = store.add(projeto);
+      
+      // 1. Buscar todos os projetos existentes
+      const getAllRequest = store.getAll();
 
-      request.onsuccess = function() {
-        showToast('Projeto salvo com sucesso!');
-        closeProjectModal();
-        loadProjects();
+      getAllRequest.onerror = function() {
+        console.error('Erro ao buscar projetos para verificação:', getAllRequest.error);
+        showToast('Erro ao verificar projetos existentes.', 'error');
       };
 
-      request.onerror = function(event) {
-        console.error('Erro ao salvar projeto:', event.target.error);
-        showToast('Erro ao salvar o projeto. Por favor, tente novamente.', 'error');
+      getAllRequest.onsuccess = function() {
+        const projetosExistentes = getAllRequest.result;
+        console.log('Verificando duplicatas contra:', projetosExistentes);
+        
+        const novaAreaInput = areaInput.value.trim();
+        const novoAnoInput = anoInput.value; // Ano como string do input
+        
+        // Normaliza para comparação
+        const novaAreaNormalizada = novaAreaInput.toLowerCase();
+        const novoAnoNumero = parseInt(novoAnoInput);
+
+        console.log(`Novo Projeto para verificar: Area='${novaAreaNormalizada}', Ano=${novoAnoNumero}`);
+
+        // 2. Verificar duplicatas comparando área e ano diretamente (com logs e coerção)
+        let duplicataEncontrada = false; // Flag para registrar se encontramos
+        const duplicataIndex = projetosExistentes.findIndex(proj => {
+            console.log(`Comparando com projeto existente ID ${proj.id}: Area='${proj.area}', Ano='${proj.ano}' (Tipo Ano: ${typeof proj.ano})`);
+            // Garante que os campos existem
+            if (proj && typeof proj.area === 'string' && proj.ano !== undefined && proj.ano !== null) {
+                const areaExistenteNormalizada = proj.area.trim().toLowerCase();
+                const anoExistenteNumero = parseInt(proj.ano); // Converte para número
+
+                // Verifica se a conversão do ano existente foi válida
+                if (isNaN(anoExistenteNumero)) {
+                    console.warn(`Ano inválido no projeto existente ID ${proj.id}: '${proj.ano}', pulando comparação.`);
+                    return false; 
+                }
+
+                const match = areaExistenteNormalizada === novaAreaNormalizada && anoExistenteNumero === novoAnoNumero;
+                console.log(`  - Area Match (${areaExistenteNormalizada} vs ${novaAreaNormalizada}): ${areaExistenteNormalizada === novaAreaNormalizada}`);
+                console.log(`  - Ano Match (${anoExistenteNumero} vs ${novoAnoNumero}): ${anoExistenteNumero === novoAnoNumero}`);
+                console.log(`  - Resultado da Comparação: ${match}`);
+                
+                return match;
+            } else {
+                 console.log(`  - Projeto existente ID ${proj.id} ignorado (dados incompletos ou tipo inválido).`);
+            }
+            return false; // Ignora projetos com dados incompletos/inválidos
+        });
+
+        // findIndex retorna -1 se não encontrar, qualquer outro valor >= 0 significa que encontrou
+        duplicataEncontrada = duplicataIndex !== -1;
+        console.log(`Duplicata Encontrada: ${duplicataEncontrada} (Índice: ${duplicataIndex})`);
+
+        if (duplicataEncontrada) {
+          // 3. Se encontrar duplicata, mostrar erro usando os valores dos inputs
+          showToast(`Erro: Já existe um projeto para a área "${novaAreaInput}" no ano ${novoAnoInput}.`, 'error');
+        } else {
+          // 4. Se não houver duplicata, adicionar o novo projeto
+          console.log('Nenhuma duplicata encontrada, adicionando novo projeto...');
+          const novoProjeto = {
+            nome: `${novaAreaInput} - ${novoAnoInput}`,
+            area: novaAreaInput,
+            ano: novoAnoNumero, // Salva o ano como número
+            dataCriacao: new Date().toISOString()
+          };
+
+          const addRequest = store.add(novoProjeto);
+
+          addRequest.onsuccess = function() {
+            showToast('Projeto salvo com sucesso!', 'success');
+            closeProjectModal();
+            loadProjects(); 
+            document.getElementById('projectForm').reset();
+          };
+
+          addRequest.onerror = function(event) {
+            console.error('Erro ao salvar projeto:', event.target.error);
+            showToast('Erro ao salvar o projeto. Tente novamente.', 'error');
+          };
+        }
       };
     });
 
