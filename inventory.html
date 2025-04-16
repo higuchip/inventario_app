@@ -204,7 +204,7 @@
         <label for="coordenadas">Coordenadas:</label>
         <div class="gps-container">
           <input type="text" id="coordenadas" readonly>
-          <button type="button" class="gps-btn" onclick="getLocation()">Obter GPS</button>
+          <button type="button" class="gps-btn" id="gpsButton">Obter GPS</button>
         </div>
       </div>
 
@@ -291,11 +291,13 @@
     
     // Função principal de inicialização
     function initializeApp() {
+      console.log('initializeApp -> Iniciada'); // Log adicionado
+      
       especieInput = document.getElementById('especie');
       autocompleteList = document.getElementById('autocomplete-list');
 
       if (!especieInput || !autocompleteList) {
-        console.error('Erro crítico: Elementos Input/List não encontrados!');
+        console.error('Erro crítico: Elementos Autocomplete não encontrados!');
         alert('Erro: Elementos essenciais da página não foram encontrados.');
         return;
       }
@@ -343,6 +345,26 @@
       
       setupAutocompleteListeners();
       setupFormSubmitListener();
+      
+      // ** VERIFICAÇÃO DO LISTENER DO BOTÃO GPS **
+      console.log('initializeApp -> Tentando encontrar o botão GPS...'); // Log GPS 1
+      const gpsButton = document.getElementById('gpsButton');
+      
+      if (gpsButton) {
+        console.log('initializeApp -> Botão GPS ENCONTRADO!', gpsButton); // Log GPS 2
+        try {
+           console.log('initializeApp -> Tentando adicionar listener ao botão GPS...'); // Log GPS 3
+           gpsButton.addEventListener('click', getLocation);
+           console.log('initializeApp -> Listener ADICIONADO ao botão GPS.'); // Log GPS 4
+        } catch (e) {
+           console.error('initializeApp -> ERRO ao adicionar listener ao botão GPS:', e); // Log GPS Erro
+           alert('Erro ao configurar o botão GPS.');
+        }
+      } else {
+        console.error('initializeApp -> ERRO: Botão GPS NÃO encontrado! Verifique o ID no HTML.'); // Log GPS Falha
+        alert('Erro crítico: Botão GPS não encontrado na página.');
+      }
+      // ** FIM DA VERIFICAÇÃO **
     }
 
     // --- Funções Auxiliares (Autocomplete, DB, Form, etc.) --- 
@@ -465,9 +487,100 @@
     }
     
     function showToast(message, type = 'success') {
+      console.log(`showToast -> Chamada com: "${message}", Tipo: ${type}`); // Log Toast 1
+      
+      const toastContainer = document.getElementById('toastContainer');
+      if (!toastContainer) {
+          console.error('showToast -> ERRO: Elemento toastContainer não encontrado!'); // Log Toast Erro
+          // Fallback para alert se o container não existe
+          alert(`(${type}): ${message}`); 
+          return; 
+      }
+      
+      console.log('showToast -> toastContainer encontrado.', toastContainer); // Log Toast 2
+      
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : '⚠';
+      
+      toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <div class="toast-content">${message}</div>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+      `;
+      
+      console.log('showToast -> Adicionando toast ao container...'); // Log Toast 3
+      toastContainer.appendChild(toast);
+      console.log('showToast -> Toast adicionado.'); // Log Toast 4
+      
+      // Remove a notificação após 5 segundos
+      setTimeout(() => {
+        // console.log('showToast -> Removendo toast após timeout.'); // Log opcional
+        if (toast && toast.parentElement) { // Verifica se ainda existe
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }
+      }, 5000);
     }
     
     function getLocation() {
+      console.log('getLocation -> Iniciada'); // Log 1
+      
+      if (navigator.geolocation) {
+        console.log('getLocation -> navigator.geolocation existe.'); // Log 2
+        
+        //showToast('Obtendo localização... Aguarde.', 'warning'); // Feedback inicial
+
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            // Callback de SUCESSO
+            console.log('getLocation -> getCurrentPosition -> Sucesso!', position); // Log 3a
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const coordInput = document.getElementById('coordenadas');
+            
+            if (coordInput) {
+              console.log(`getLocation -> Definindo coordenadas: ${lat}, ${lng}`); // Log 4a
+              coordInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+              console.log('getLocation -> Chamando showToast de sucesso...'); // Log 5a
+              showToast('Coordenadas obtidas com sucesso!', 'success');
+            } else {
+              console.error('getLocation -> Elemento de coordenadas não encontrado!');
+              alert('Erro interno: Campo de coordenadas não encontrado.'); // Fallback alert
+            }
+          },
+          function(error) {
+            // Callback de ERRO
+            console.error('getLocation -> getCurrentPosition -> ERRO!', error); // Log 3b
+            // Log detalhado do código e mensagem do erro
+            console.error(`Código do erro: ${error.code}, Mensagem: ${error.message}`); 
+            
+            let userMessage = 'Erro ao obter localização: ' + error.message;
+            // Mensagens mais amigáveis para erros comuns
+            if (error.code === error.PERMISSION_DENIED) {
+                userMessage = 'Permissão de localização negada. Verifique as configurações do navegador/site.';
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+                userMessage = 'Informação de localização indisponível no momento.';
+            } else if (error.code === error.TIMEOUT) {
+                userMessage = 'Tempo esgotado ao tentar obter localização.';
+            }
+            
+            console.log('getLocation -> Chamando showToast de erro...'); // Log 5b
+            showToast(userMessage, 'error');
+          },
+          {
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 0 
+          }
+        );
+        console.log('getLocation -> Chamada para getCurrentPosition realizada.'); // Log 6
+      } else {
+        console.warn('getLocation -> navigator.geolocation NÃO existe.'); // Log 2 negado
+        showToast('Geolocalização não é suportada neste navegador.', 'error');
+      }
+      console.log('getLocation -> Finalizada.'); // Log 7
     }
     
     // Nova função para encapsular o listener do form
