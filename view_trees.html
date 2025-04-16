@@ -6,91 +6,203 @@
   <title>Visualizar Árvores</title>
   <link rel="stylesheet" href="style.css">
   <style>
+    :root {
+      --primary-color: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --accent-color: #1976D2;
+      --secondary-accent: #0D47A1;
+      --error-color: #D32F2F;
+      --warning-color: #FFA000;
+      --text-color: #333333;
+      --text-light: #757575;
+      --background-color: #F9F9F9;
+      --card-color: #FFFFFF;
+      --border-color: #E0E0E0;
+      --shadow: 0 2px 4px rgba(0,0,0,0.1);
+      --shadow-hover: 0 4px 8px rgba(0,0,0,0.15);
+      --border-radius: 8px;
+      --animation-speed: 0.2s;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    
     .container {
       max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
+      margin: 20px auto;
+      padding: 24px;
       width: 100%;
       box-sizing: border-box;
+      background-color: var(--card-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
     }
+    
+    .app-header {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 20px 24px;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+      margin: -24px -24px 24px -24px;
+    }
+    
+    .app-header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 500;
+    }
+    
     .project-info {
-      background-color: #f5f5f5;
-      padding: 15px;
-      border-radius: 4px;
-      margin-bottom: 20px;
+      background-color: rgba(25, 118, 210, 0.05);
+      padding: 16px 20px;
+      border-radius: var(--border-radius);
+      margin-bottom: 24px;
+      border: 1px solid rgba(25, 118, 210, 0.1);
     }
+    
+    .project-info h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+    
     .button-group {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 16px;
+      margin-bottom: 24px;
       flex-wrap: wrap;
     }
+    
     .button-group button {
       flex: 1;
       min-width: 120px;
     }
+    
     button {
       padding: 12px 20px;
       border: none;
-      border-radius: 4px;
+      border-radius: var(--border-radius);
       cursor: pointer;
-      font-weight: bold;
-      font-size: 16px;
+      font-weight: 500;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color var(--animation-speed), transform var(--animation-speed), box-shadow var(--animation-speed);
     }
+    
+    button:hover {
+      box-shadow: var(--shadow-hover);
+    }
+    
+    button:active {
+      transform: translateY(1px);
+    }
+    
     .back-btn {
       background-color: #607D8B;
       color: white;
     }
-    .add-btn {
-      background-color: #4CAF50;
+    
+    .back-btn:hover {
+      background-color: #546E7A;
+    }
+    
+    .add-btn, .add-tree-btn {
+      background-color: var(--primary-color);
       color: white;
     }
+    
+    .add-btn:hover, .add-tree-btn:hover {
+      background-color: var(--primary-dark);
+    }
+    
     .export-csv-btn {
-      background-color: #4CAF50;
+      background-color: var(--accent-color);
       color: white;
     }
+    
+    .export-csv-btn:hover {
+      background-color: var(--secondary-accent);
+    }
+    
     .table-container {
       width: 100%;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
     }
+    
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
       min-width: 800px;
     }
+    
     th, td {
-      padding: 12px;
+      padding: 12px 16px;
       text-align: left;
-      border-bottom: 1px solid #ddd;
     }
+    
     th {
       background-color: #f5f5f5;
-      font-weight: bold;
+      font-weight: 500;
       position: sticky;
       top: 0;
+      color: var(--text-color);
+      border-bottom: 2px solid var(--border-color);
     }
+    
+    tr {
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    tr:last-child {
+      border-bottom: none;
+    }
+    
     tr:hover {
-      background-color: #f9f9f9;
+      background-color: rgba(25, 118, 210, 0.02);
     }
+    
     .action-btn {
       padding: 8px 12px;
       border: none;
-      border-radius: 4px;
+      border-radius: var(--border-radius);
       cursor: pointer;
-      font-weight: bold;
-      margin-right: 5px;
+      font-weight: 500;
+      margin-right: 8px;
       font-size: 14px;
     }
+    
     .edit-btn {
-      background-color: #2196F3;
+      background-color: var(--accent-color);
       color: white;
     }
+    
+    .edit-btn:hover {
+      background-color: var(--secondary-accent);
+    }
+    
     .delete-btn {
-      background-color: #F44336;
+      background-color: var(--error-color);
       color: white;
     }
+    
+    .delete-btn:hover {
+      background-color: #B71C1C;
+    }
+    
     .modal {
       display: none;
       position: fixed;
@@ -100,25 +212,38 @@
       height: 100%;
       background-color: rgba(0,0,0,0.5);
       z-index: 1000;
+      backdrop-filter: blur(2px);
     }
+    
     .modal-content {
       background-color: white;
       margin: 15% auto;
-      padding: 20px;
-      border-radius: 8px;
+      padding: 24px;
+      border-radius: var(--border-radius);
       width: 90%;
       max-width: 500px;
       box-sizing: border-box;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
+    
+    .modal-content h3 {
+      margin-top: 0;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+    
     .modal-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 10px;
-      margin-top: 20px;
+      gap: 16px;
+      margin-top: 24px;
     }
+    
     .modal-actions button {
       padding: 10px 20px;
+      min-width: 100px;
     }
+    
     /* Estilo para as notificações toast */
     .toast-container {
       position: fixed;
@@ -127,12 +252,13 @@
       left: 20px;
       z-index: 1000;
     }
+    
     .toast {
-      background-color: #fff;
-      border-radius: 4px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      background-color: var(--card-color);
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       padding: 16px;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
       display: flex;
       align-items: center;
       width: 100%;
@@ -141,32 +267,49 @@
       margin-right: auto;
       animation: slideIn 0.3s ease-out;
     }
+    
     .toast.success {
-      border-left: 4px solid #4CAF50;
+      border-left: 4px solid var(--primary-light);
     }
+    
     .toast.error {
-      border-left: 4px solid #F44336;
+      border-left: 4px solid var(--error-color);
     }
+    
     .toast.warning {
-      border-left: 4px solid #FFC107;
+      border-left: 4px solid var(--warning-color);
     }
+    
     .toast-icon {
-      margin-right: 10px;
+      margin-right: 12px;
       font-size: 20px;
     }
+    
     .toast-content {
       flex-grow: 1;
     }
+    
     .toast-close {
       background: none;
       border: none;
       cursor: pointer;
       padding: 0;
       margin-left: 10px;
+      color: var(--text-light);
+      font-size: 18px;
     }
+    
+    .toast-close:hover {
+      color: var(--text-color);
+    }
+    
+    .icon {
+      font-style: normal;
+    }
+    
     @keyframes slideIn {
       from {
-        transform: translateX(100%);
+        transform: translateX(30px);
         opacity: 0;
       }
       to {
@@ -174,23 +317,43 @@
         opacity: 1;
       }
     }
+    
     @media (max-width: 600px) {
       .container {
-        padding: 15px;
+        padding: 16px;
+        margin: 0;
+        border-radius: 0;
       }
+      
+      .app-header {
+        margin: -16px -16px 16px -16px;
+        border-radius: 0;
+      }
+      
       .button-group {
         flex-direction: column;
       }
+      
       .button-group button {
         width: 100%;
       }
+      
       .modal-content {
         margin: 10% auto;
-        padding: 15px;
+        padding: 16px;
+        width: 95%;
       }
+      
       .action-btn {
         padding: 6px 10px;
-        font-size: 12px;
+        font-size: 13px;
+        margin-bottom: 5px;
+      }
+      
+      .toast {
+        max-width: 100%;
+        margin-left: 16px;
+        margin-right: 16px;
       }
     }
   </style>
@@ -198,14 +361,24 @@
 <body>
   <div class="toast-container" id="toastContainer"></div>
   <div class="container">
+    <div class="app-header">
+      <h1>Inventário Florestal</h1>
+    </div>
+    
     <div class="project-info">
       <h2 id="projectTitle">Carregando informações do projeto...</h2>
     </div>
 
     <div class="button-group">
-      <button class="add-tree-btn" onclick="addNewTree()">Nova Árvore</button>
-      <button class="export-csv-btn" onclick="exportToCSV()">Exportar CSV</button>
-      <button class="back-btn" onclick="window.location.href='project.html'">Voltar</button>
+      <button class="add-tree-btn" onclick="addNewTree()">
+        <i class="icon">+</i> Nova Árvore
+      </button>
+      <button class="export-csv-btn" onclick="exportToCSV()">
+        <i class="icon">&#8595;</i> Exportar CSV
+      </button>
+      <button class="back-btn" onclick="window.location.href='project.html'">
+        <i class="icon">&#8592;</i> Voltar
+      </button>
     </div>
 
     <div class="table-container">
@@ -236,10 +409,10 @@
   <div id="deleteModal" class="modal">
     <div class="modal-content">
       <h3>Confirmar Exclusão</h3>
-      <p>Tem certeza que deseja excluir esta árvore?</p>
+      <p>Tem certeza que deseja excluir esta árvore? Esta ação não pode ser desfeita.</p>
       <div class="modal-actions">
-        <button onclick="closeDeleteModal()">Cancelar</button>
-        <button class="delete-btn" onclick="confirmDelete()">Excluir</button>
+        <button onclick="closeDeleteModal()" style="background-color: #E0E0E0; color: var(--text-color);">Cancelar</button>
+        <button class="delete-btn" onclick="confirmDelete()"><i class="icon">✕</i> Excluir</button>
       </div>
     </div>
   </div>
@@ -343,8 +516,8 @@
             <td>${new Date(arvore.dataRegistro).toLocaleString()}</td>
             <td>${arvore.observacao || '-'}</td>
             <td>
-              <button class="action-btn edit-btn" onclick="editTree(${arvore.id})">Editar</button>
-              <button class="action-btn delete-btn" onclick="deleteTree(${arvore.id})">Excluir</button>
+              <button class="action-btn edit-btn" onclick="editTree(${arvore.id})"><i class="icon">✎</i> Editar</button>
+              <button class="action-btn delete-btn" onclick="deleteTree(${arvore.id})"><i class="icon">✕</i> Excluir</button>
             </td>
           `;
           tbody.appendChild(tr);
