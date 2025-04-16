@@ -39,39 +39,74 @@ self.addEventListener('activate', event => {
 
 // Interceptação de requisições
 self.addEventListener('fetch', event => {
+  // ** NÃO INTERCEPTAR requisições não-HTTP/HTTPS **
+  // Ignora extensões, dados, etc., que não podem ser cacheados ou buscados normalmente.
+  if (!event.request.url.startsWith('http')) {
+    console.log('[SW] Ignorando requisição não-HTTP(S):', event.request.url);
+    // Deixa o navegador lidar com ela normalmente, sem interceptar.
+    return; 
+  }
+
+  // Só continua para requisições HTTP/HTTPS
+  console.log('[SW] Interceptando requisição HTTP(S):', event.request.url);
+  
   event.respondWith(
     caches.match(event.request)
       .then(response => {
         // Cache hit - retorna a resposta do cache
         if (response) {
+          console.log('[SW] Cache hit para:', event.request.url);
           return response;
         }
+        
+        console.log('[SW] Cache miss para:', event.request.url);
 
         // Clone da requisição
         const fetchRequest = event.request.clone();
 
         return fetch(fetchRequest).then(
           response => {
-            // Verifica se recebemos uma resposta válida
-            if(!response || response.status !== 200 || response.type !== 'basic') {
+            // Verifica se recebemos uma resposta válida ANTES de tentar cachear
+            // Permite respostas não-basic (CORS) mas ainda verifica status 200
+            if(!response || response.status !== 200) {
+              console.log('[SW] Resposta inválida ou não 200, não cacheando:', event.request.url, response ? response.status : 'sem resposta');
               return response;
             }
 
-            // Clone da resposta
+            // Clone da resposta para o cache
             const responseToCache = response.clone();
 
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
+            // Coloca no cache APENAS se for uma resposta válida e básica (mesma origem)
+            // A verificação http já foi feita, mas adicionamos a type basic aqui por segurança extra
+            if (response.type === 'basic') {
+                caches.open(CACHE_NAME)
+                  .then(cache => {
+                    console.log('[SW] Tentando cachear resposta para:', event.request.url);
+                    cache.put(event.request, responseToCache).catch(err => {
+                        // Logar erro de put mas não deixar quebrar a resposta principal
+                        console.error('[SW] Falha ao executar cache.put:', err, event.request.url);
+                    });
+                  });
+            } else {
+                console.log(`[SW] Resposta não é 'basic', pulando cache: ${event.request.url}, Tipo: ${response.type}`);
+            }
 
-            return response;
+            return response; // Retorna a resposta original da rede
           }
-        ).catch(() => {
-          // Se falhar ao buscar online, tenta retornar a página offline
+        ).catch(error => {
+          // Ocorreu um erro ao tentar buscar na rede
+          console.error('[SW] Erro durante fetch para:', event.request.url, error);
+          
+          // Estratégia de fallback: se for uma navegação de página, tenta servir o index.html do cache
           if (event.request.mode === 'navigate') {
-            return caches.match('index.html');
+            console.log('[SW] Falha de rede para navegação, tentando servir index.html do cache...');
+            // Retorna a promise diretamente, o navegador lida se não encontrar
+            return caches.match('index.html'); 
           }
+          
+          // Para outros tipos de requisições, falha (retorna undefined implicitamente).
+          console.log('[SW] Falha de rede para recurso não-navegação:', event.request.url);
+          // Não retorna nada explicitamente, resultando em erro de rede para o recurso.
         });
       })
   );

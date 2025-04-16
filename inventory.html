@@ -153,6 +153,38 @@
         width: 100%;
       }
     }
+    /* Estilo para o autocomplete personalizado */
+    .autocomplete-container {
+      position: relative;
+    }
+    .autocomplete-items {
+      position: absolute;
+      border: 1px solid #ddd;
+      border-top: none;
+      z-index: 99;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: white;
+      border-radius: 0 0 4px 4px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .autocomplete-items div {
+      padding: 10px;
+      cursor: pointer;
+      color: #333;
+      border-bottom: 1px solid #ddd;
+    }
+    .autocomplete-items div:hover {
+      background-color: #e9e9e9;
+    }
+    .autocomplete-active {
+      background-color: #1e88e5 !important;
+      color: white !important;
+    }
+    /* Fim do estilo do autocomplete */
   </style>
 </head>
 <body>
@@ -178,7 +210,10 @@
 
       <div class="form-group">
         <label for="especie">Espécie:</label>
-        <input type="text" id="especie" required>
+        <div class="autocomplete-container">
+          <input type="text" id="especie" required autocomplete="off">
+          <div id="autocomplete-list" class="autocomplete-items" style="display: none;"></div>
+        </div>
       </div>
 
       <div class="form-group">
@@ -203,145 +238,310 @@
   </div>
 
   <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        initializeApp();
+      } catch (e) {
+        console.error('[CRITICAL] Erro durante DOMContentLoaded/initializeApp:', e);
+        alert('Erro crítico ao inicializar a página. Funcionalidades podem estar quebradas.');
+      }
+    });
+    
+    // Adiciona um listener para pagehide
+    window.addEventListener('pagehide', function(event) {
+    });
+
+    // Adiciona um listener para pageshow
+    window.addEventListener('pageshow', function(event) {
+      let dbSeemsValid = false;
+      if (db) {
+          try {
+              db.transaction(['arvores'], 'readonly');
+              dbSeemsValid = true;
+          } catch (e) {
+              console.error('[SW] pageshow: ERRO ao tentar usar conexão DB! Parece inválida.', e);
+              db = null;
+              alert('A conexão com o banco de dados foi perdida ao voltar. Recarregue a página ou tente novamente.');
+          }
+      }
+
+      if (event.persisted) {
+          if (!dbSeemsValid) {
+              initializeApp(); 
+          } else {
+              loadSpeciesSuggestions(); 
+          }
+      }
+    });
+
+    // Variáveis globais (ou no escopo da função anônima externa, se preferir)
     let db;
     let currentProjectId = null;
     let currentTreeId = null;
-    const request = indexedDB.open('InventarioDB', 1);
+    const especiesComuns = [
+      "Araucaria angustifolia", "Cedrela fissilis", "Ocotea porosa",
+      "Ilex paraguariensis", "Euterpe edulis", "Jacaranda mimosifolia",
+      "Handroanthus albus", "Handroanthus impetiginosus",
+      "Caesalpinia echinata", "Dalbergia nigra"
+    ];
+    let todasEspecies = [...especiesComuns];
+    let autocompleteSetupDone = false;
+    let especieInput;
+    let autocompleteList;
+    
+    // Função principal de inicialização
+    function initializeApp() {
+      especieInput = document.getElementById('especie');
+      autocompleteList = document.getElementById('autocomplete-list');
 
-    // Função para mostrar notificações toast
-    function showToast(message, type = 'success') {
-      const toastContainer = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      
-      const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : '⚠';
-      
-      toast.innerHTML = `
-        <span class="toast-icon">${icon}</span>
-        <div class="toast-content">${message}</div>
-        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
-      `;
-      
-      toastContainer.appendChild(toast);
-      
-      // Remove a notificação após 5 segundos
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-      }, 5000);
-    }
-
-    // Função para obter coordenadas via GPS
-    function getLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            document.getElementById('coordenadas').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            showToast('Coordenadas obtidas com sucesso!');
-          },
-          function(error) {
-            showToast('Erro ao obter localização: ' + error.message, 'error');
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0
-          }
-        );
-      } else {
-        showToast('Geolocalização não é suportada neste navegador.', 'error');
-      }
-    }
-
-    request.onerror = function(event) {
-      console.error('Erro ao abrir o banco de dados:', event.target.error);
-      showToast('Não foi possível iniciar o banco de dados local.', 'error');
-    };
-
-    request.onsuccess = function(event) {
-      db = event.target.result;
-      console.log('Banco de dados aberto com sucesso');
-      document.getElementById('save-update-btn').disabled = false;
-
-      currentProjectId = localStorage.getItem('currentProjectId');
-      currentTreeId = localStorage.getItem('currentTreeId');
-
-      if (!currentProjectId) {
-        showToast('Nenhum projeto selecionado. Redirecionando...', 'warning');
-        setTimeout(() => window.location.href = 'project.html', 2000);
+      if (!especieInput || !autocompleteList) {
+        console.error('Erro crítico: Elementos Input/List não encontrados!');
+        alert('Erro: Elementos essenciais da página não foram encontrados.');
         return;
       }
 
-      if (currentTreeId) {
-        loadTreeData();
-      }
-    };
-
-    function loadTreeData() {
-      const transaction = db.transaction(['arvores'], 'readonly');
-      const store = transaction.objectStore('arvores');
-      const request = store.get(parseInt(currentTreeId));
-
-      request.onsuccess = function() {
-        const arvore = request.result;
-        if (!arvore) {
-          showToast('Árvore não encontrada. Redirecionando...', 'error');
-          setTimeout(() => window.location.href = 'view_trees.html', 2000);
-          return;
-        }
-
-        document.getElementById('parcela').value = arvore.parcela;
-        document.getElementById('especie').value = arvore.especie;
-        document.getElementById('cap').value = arvore.cap;
-        document.getElementById('altura').value = arvore.altura || '';
-        document.getElementById('coordenadas').value = arvore.coordenadas || '';
-        document.getElementById('observacao').value = arvore.observacao || '';
-        document.getElementById('save-update-btn').textContent = 'Atualizar Árvore';
-      };
-    }
-
-    document.getElementById('treeForm').addEventListener('submit', function(event) {
-      event.preventDefault();
-
-      const arvore = {
-        parcela: document.getElementById('parcela').value,
-        especie: document.getElementById('especie').value,
-        cap: parseFloat(document.getElementById('cap').value),
-        altura: document.getElementById('altura').value ? parseFloat(document.getElementById('altura').value) : null,
-        coordenadas: document.getElementById('coordenadas').value || null,
-        observacao: document.getElementById('observacao').value || null,
-        projetoId: parseInt(currentProjectId),
-        dataRegistro: new Date().toISOString()
-      };
-
-      const transaction = db.transaction(['arvores'], 'readwrite');
-      const store = transaction.objectStore('arvores');
-
-      let request;
-      if (currentTreeId) {
-        arvore.id = parseInt(currentTreeId);
-        request = store.put(arvore);
-      } else {
-        request = store.add(arvore);
-      }
-
-      request.onsuccess = function() {
-        showToast(currentTreeId ? 'Árvore atualizada com sucesso!' : 'Árvore salva com sucesso!');
-        if (currentTreeId) {
-          setTimeout(() => window.location.href = 'view_trees.html', 2000);
-        } else {
-          document.getElementById('treeForm').reset();
-          document.getElementById('save-update-btn').textContent = 'Salvar Árvore';
-        }
-      };
+      // Tenta abrir o DB
+      const request = indexedDB.open('InventarioDB', 1);
 
       request.onerror = function(event) {
-        console.error('Erro ao salvar árvore:', event.target.error);
-        showToast('Erro ao salvar a árvore. Por favor, tente novamente.', 'error');
+        console.error('Erro ao abrir IndexedDB:', event.target.error);
+        alert('Não foi possível conectar ao banco de dados local. Sugestões podem ser limitadas.');
+        todasEspecies = [...especiesComuns];
+        setupAutocompleteListeners(); 
       };
-    });
+
+      request.onsuccess = function(event) {
+        db = event.target.result; 
+        
+        // --- Validação Robusta de IDs --- 
+        let rawProjectId = localStorage.getItem('currentProjectId');
+        let rawTreeId = localStorage.getItem('currentTreeId');
+
+        if (!rawProjectId || isNaN(parseInt(rawProjectId))) { 
+            alert('ID do Projeto inválido ou não encontrado! Redirecionando...');
+            window.location.href = 'project.html';
+            return;
+        }
+        currentProjectId = parseInt(rawProjectId); 
+
+        if (rawTreeId && isNaN(parseInt(rawTreeId))) {
+            alert('ID da Árvore inválido! Limpando ID...');
+            localStorage.removeItem('currentTreeId');
+            rawTreeId = null;
+        }
+        currentTreeId = rawTreeId ? parseInt(rawTreeId) : null;
+        // --- Fim da Validação de IDs ---
+
+        document.getElementById('save-update-btn').disabled = false;
+
+        loadSpeciesSuggestions(); 
+
+        if (currentTreeId) {
+          loadTreeData();
+        }
+      };
+      
+      setupAutocompleteListeners();
+      setupFormSubmitListener();
+    }
+
+    // --- Funções Auxiliares (Autocomplete, DB, Form, etc.) --- 
+    // (showSuggestions, setupAutocompleteListeners, loadSpeciesSuggestions, 
+    //  loadTreeData, showToast, getLocation permanecem aqui)
+    
+    function showSuggestions(filter = '') {
+      autocompleteList.innerHTML = '';
+      autocompleteList.style.display = 'none';
+
+      const lowerFilter = filter.toLowerCase();
+      const matches = todasEspecies.filter(especie => 
+        especie.toLowerCase().includes(lowerFilter)
+      );
+      
+      if (matches.length === 0) {
+        const item = document.createElement('div');
+        item.textContent = filter ? 'Nenhuma espécie encontrada' : 'Nenhuma sugestão';
+        item.style.padding = '10px';
+        item.style.color = '#888';
+        autocompleteList.appendChild(item);
+      } else {
+        matches.forEach(especie => {
+          const item = document.createElement('div');
+          item.textContent = especie;
+          item.style.padding = '10px';
+          item.style.cursor = 'pointer';
+          
+          item.addEventListener('click', function() {
+            especieInput.value = especie;
+            autocompleteList.style.display = 'none';
+          });
+          
+          item.addEventListener('mouseenter', () => item.style.backgroundColor = '#f0f0f0');
+          item.addEventListener('mouseleave', () => item.style.backgroundColor = 'white');
+          
+          autocompleteList.appendChild(item);
+        });
+      }
+      
+      if (matches.length > 0 || !filter) {
+           autocompleteList.style.display = 'block';
+      } else if (filter && matches.length === 0) {
+           autocompleteList.style.display = 'block';
+      }
+    }
+    
+    function setupAutocompleteListeners() {
+        const oldInput = document.getElementById('especie');
+
+        const handleFocus = () => {
+        };
+        const handleInput = () => {
+            if (especieInput.value.trim() !== '') {
+                showSuggestions(especieInput.value);
+            } else {
+                autocompleteList.style.display = 'none';
+            }
+        };
+        const handleClickOutside = (event) => {
+            if (!especieInput.contains(event.target) && !autocompleteList.contains(event.target)) {
+                if (autocompleteList.style.display !== 'none') {
+                    autocompleteList.style.display = 'none';
+                }
+            }
+        };
+
+        if (oldInput) {
+             oldInput.removeEventListener('focus', handleFocus);
+             oldInput.removeEventListener('input', handleInput);
+        }
+        document.removeEventListener('click', handleClickOutside);
+
+        if (especieInput) {
+            especieInput.addEventListener('focus', handleFocus);
+            especieInput.addEventListener('input', handleInput);
+            document.addEventListener('click', handleClickOutside);
+            autocompleteSetupDone = true;
+        } else {
+             console.error('Erro: especieInput não definido ao tentar adicionar listeners!');
+        }
+    }
+    
+    function loadSpeciesSuggestions() {
+      if (!db) {
+        console.warn('DB não pronto para carregar sugestões, usando apenas espécies comuns.');
+        todasEspecies = [...especiesComuns];
+        setupAutocompleteListeners();
+        return;
+      }
+      
+      try {
+        const transaction = db.transaction(['arvores'], 'readonly');
+        const store = transaction.objectStore('arvores');
+        const request = store.getAll();
+
+        request.onsuccess = function() {
+          const arvores = request.result;
+          const arvoresProjetoAtual = arvores.filter(arvore => arvore.projetoId === currentProjectId);
+          const especiesDoProjeto = [...new Set(arvoresProjetoAtual.map(arvore => arvore.especie))].filter(Boolean);
+          
+          todasEspecies = [...new Set([...especiesComuns, ...especiesDoProjeto])].filter(e => e && e.trim() !== '');
+          
+          setupAutocompleteListeners(); 
+        };
+
+        request.onerror = function(event) {
+          console.error('Erro ao buscar árvores no DB para sugestões:', event.target.error);
+          todasEspecies = [...especiesComuns];
+          setupAutocompleteListeners(); 
+        };
+      } catch (error) {
+        console.error('Erro inesperado em loadSpeciesSuggestions:', error);
+        todasEspecies = [...especiesComuns];
+        setupAutocompleteListeners();
+      }
+    }
+    
+    function loadTreeData() {
+    }
+    
+    function showToast(message, type = 'success') {
+    }
+    
+    function getLocation() {
+    }
+    
+    // Nova função para encapsular o listener do form
+    function setupFormSubmitListener() {
+        const form = document.getElementById('treeForm');
+        if (!form.dataset.listenerAttached) {
+             form.addEventListener('submit', function handleFormSubmit(event) {
+                event.preventDefault();
+                
+                const especieValue = document.getElementById('especie').value.trim();
+                const capValue = parseFloat(document.getElementById('cap').value);
+                const alturaInput = document.getElementById('altura').value;
+                let alturaValue = alturaInput ? parseFloat(alturaInput) : null;
+        
+                if (especieValue === '') {
+                   showToast('O campo Espécie é obrigatório.', 'error');
+                   return;
+                }
+                if (isNaN(capValue)) {
+                    showToast('Valor inválido para CAP.', 'error');
+                    return;
+                }
+                if (alturaInput && isNaN(alturaValue)) {
+                    showToast('Valor inválido para Altura.', 'error');
+                    return;
+                }
+        
+                const arvore = {
+                   parcela: document.getElementById('parcela').value,
+                   especie: especieValue,
+                   cap: capValue,
+                   altura: alturaValue,
+                   coordenadas: document.getElementById('coordenadas').value || null,
+                   observacao: document.getElementById('observacao').value || null,
+                   projetoId: currentProjectId,
+                   dataRegistro: new Date().toISOString()
+                };
+        
+                if (!db) {
+                     console.error('DB não disponível ao tentar salvar!');
+                     showToast('Erro: Conexão com banco de dados perdida.', 'error');
+                     return;
+                }
+                
+                const transaction = db.transaction(['arvores'], 'readwrite');
+                const store = transaction.objectStore('arvores');
+                let request;
+                
+                if (currentTreeId) { 
+                  arvore.id = currentTreeId;
+                  request = store.put(arvore);
+                } else {
+                  request = store.add(arvore);
+                }
+        
+                request.onsuccess = function() {
+                   showToast(currentTreeId ? 'Árvore atualizada!' : 'Árvore salva!');
+                   if (!currentTreeId) {
+                      loadSpeciesSuggestions();
+                      document.getElementById('treeForm').reset();
+                      document.getElementById('save-update-btn').textContent = 'Salvar Árvore';
+                   } else {
+                      setTimeout(() => window.location.href = 'view_trees.html', 1500);
+                   }
+                };
+        
+                request.onerror = function(event) {
+                   console.error('Erro ao salvar árvore:', event.target.error);
+                   showToast('Erro ao salvar a árvore.', 'error');
+                };
+             });
+             form.dataset.listenerAttached = 'true';
+        }
+    }
   </script>
 </body>
 </html>
