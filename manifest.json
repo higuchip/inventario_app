@@ -1,6 +1,7 @@
 {
   "name": "Planilha Florestal",
   "short_name": "Planilha Florestal",
+  "id": "/inventario_app/",
   "description": "Coleta de dados para inventário florestal",
   "start_url": "index.html",
   "display": "standalone",
@@ -11,13 +12,25 @@
       "src": "icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "orientation": "portrait",
