@@ -10,7 +10,7 @@ Este projeto foi desenvolvido pensando nas necessidades de engenheiros florestai
 
 ## ⚠️ **Status Atual: BETA / EXPERIMENTAL** ⚠️
 
-**Data da Última Revisão Deste README:** 18 de abril de 2025
+**Data da Última Revisão Deste README:** 22 de abril de 2025
 
 **ATENÇÃO:** Este aplicativo está em fase de desenvolvimento e testes (Beta). **NÃO HÁ GARANTIAS** de funcionamento perfeito ou de preservação dos dados inseridos. Podem ocorrer bugs, perda de dados ou comportamento inesperado.
 
@@ -31,6 +31,7 @@ Este projeto foi desenvolvido pensando nas necessidades de engenheiros florestai
 * **Interface Adaptada para Instalação:** Botão inteligente (`install-button.js`) que oferece a opção de instalar (Android/Desktop) ou adicionar à tela inicial (iOS) com instruções claras.
 * **Visualização e Edição:** Consulte, edite ou exclua dados de árvores e projetos registrados.
 * **Exportação de Dados:** Exporte os dados das árvores de um projeto para um arquivo CSV (separado por ponto e vírgula, codificação UTF-8), compatível com planilhas (Excel, Google Sheets, LibreOffice Calc) e softwares de análise.
+* **Importação de Dados:** Importe registros de árvores a partir de um arquivo CSV (mesmo formato de exportação); duplicatas de ID de Árvore são ignoradas e o sistema exibe resumo de importação (novos, duplicatas e linhas inválidas).
 
 ---
 
@@ -143,6 +144,7 @@ Após acessar ou instalar o aplicativo:
 * **Ações Principais:**
     * `+ Nova Árvore`: Atalho para ir à tela de cadastro (`inventory.html`) para este projeto.
     * `↓ Exportar CSV`: Gera e baixa um arquivo `.csv` com todas as árvores do projeto atual. **Use esta função para fazer backup dos seus dados!**
+    * `↑ Importar CSV`: Permite carregar novos registros de árvore a partir de um arquivo CSV no mesmo formato. IDs duplicados são ignorados e um relatório final informa quantos registros foram importados, quantas duplicatas e quantas linhas inválidas foram descartadas.
     * `← Voltar`: Retorna para a tela de projetos (`project.html`).
 * **Ações por Árvore (na tabela):**
     * `✎ Editar`: Leva à tela de cadastro (`inventory.html`) com os dados da árvore preenchidos para edição.
@@ -187,7 +189,7 @@ Após acessar ou instalar o aplicativo:
 
 ## Planos Futuros (Ideias)
 
-* Importação de dados CSV.
+* (Implementado) Importação de dados CSV com verificação de duplicatas e relatório de importação.
 * Melhorias na interface e usabilidade (UX/UI).
 * Visualização de parcelas em mapa interativo.
 * Validações de dados mais avançadas.
