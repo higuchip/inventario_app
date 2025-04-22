@@ -310,6 +310,15 @@
     .toast-close:hover {
       color: var(--text-color);
     }
+    /* Cursor pointer para colunas ordenáveis */
+    th[data-sort-key] {
+      cursor: pointer;
+    }
+    /* Indicador de direção de ordenação */
+    .sort-indicator {
+      margin-left: 4px;
+      font-size: 0.8em;
+    }
     
     .icon {
       font-style: normal;
@@ -396,9 +405,9 @@
       <table>
         <thead>
           <tr>
-            <th>Parcela</th>
-            <th>ID Árvore</th>
-            <th>Espécie</th>
+            <th data-sort-key="parcela">Parcela <span class="sort-indicator"></span></th>
+            <th data-sort-key="idArvoreUsuario">ID Árvore <span class="sort-indicator"></span></th>
+            <th data-sort-key="especie">Espécie <span class="sort-indicator"></span></th>
             <th>CAP (cm)</th>
             <th>Altura (m)</th>
             <th>Coordenadas</th>
@@ -432,6 +441,10 @@
     let db;
     let currentProjectId = null;
     let currentTreeId = null;
+    // Lista de árvores carregadas e estado de ordenação
+    let arvoresList = [];
+    let sortKey = null;
+    let sortDir = 'asc';
     const request = indexedDB.open('InventarioDB', 1);
 
     // Função para mostrar notificações toast
@@ -502,37 +515,9 @@
       const request = index.getAll(parseInt(currentProjectId));
 
       request.onsuccess = function() {
-        const arvores = request.result;
-        const tbody = document.getElementById('treesTableBody');
-        tbody.innerHTML = '';
-
-        if (arvores.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="9">Nenhuma árvore registrada para este projeto.</td>
-            </tr>
-          `;
-          return;
-        }
-
-        arvores.forEach(arvore => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${arvore.parcela}</td>
-            <td>${arvore.idArvoreUsuario || '-'}</td>
-            <td>${arvore.especie}</td>
-            <td>${formatCapDisplay(arvore)}</td>
-            <td>${arvore.altura || '-'}</td>
-            <td>${arvore.coordenadas || '-'}</td>
-            <td>${new Date(arvore.dataRegistro).toLocaleString()}</td>
-            <td>${arvore.observacao || '-'}</td>
-            <td>
-              <button class="action-btn edit-btn" onclick="editTree(${arvore.id})"><i class="icon">✎</i> Editar</button>
-              <button class="action-btn delete-btn" onclick="deleteTree(${arvore.id})"><i class="icon">✕</i> Excluir</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
+        // Armazena localmente e renderiza a tabela com ordenação
+        arvoresList = request.result || [];
+        renderTable();
       };
     }
 
@@ -575,6 +560,67 @@
         console.error('Erro ao excluir árvore:', event.target.error);
         showToast('Erro ao excluir a árvore. Por favor, tente novamente.', 'error');
       };
+    }
+
+    // Renderiza a tabela de árvores aplicando ordenação se definida
+    function renderTable() {
+      const tbody = document.getElementById('treesTableBody');
+      tbody.innerHTML = '';
+      if (!arvoresList || arvoresList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9">Nenhuma árvore registrada para este projeto.</td></tr>`;
+        return;
+      }
+      // Aplica ordenação se solicitado
+      let list = [...arvoresList];
+      if (sortKey) {
+        list.sort((a, b) => {
+          let av = (a[sortKey] || '').toString().toLowerCase();
+          let bv = (b[sortKey] || '').toString().toLowerCase();
+          if (av < bv) return sortDir === 'asc' ? -1 : 1;
+          if (av > bv) return sortDir === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+      // Preenche as linhas
+      list.forEach(arvore => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${arvore.parcela}</td>
+          <td>${arvore.idArvoreUsuario || '-'}</td>
+          <td>${arvore.especie}</td>
+          <td>${formatCapDisplay(arvore)}</td>
+          <td>${arvore.altura || '-'}</td>
+          <td>${arvore.coordenadas || '-'}</td>
+          <td>${new Date(arvore.dataRegistro).toLocaleString()}</td>
+          <td>${arvore.observacao || '-'}</td>
+          <td>
+            <button class="action-btn edit-btn" onclick="editTree(${arvore.id})"><i class="icon">✎</i> Editar</button>
+            <button class="action-btn delete-btn" onclick="deleteTree(${arvore.id})"><i class="icon">✕</i> Excluir</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Configura listeners de clique nos cabeçalhos de colunas para ordenação
+    function setupSortListeners() {
+      const headers = document.querySelectorAll('th[data-sort-key]');
+      headers.forEach(hdr => {
+        hdr.addEventListener('click', () => {
+          const key = hdr.getAttribute('data-sort-key');
+          if (sortKey === key) {
+            sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortKey = key;
+            sortDir = 'asc';
+          }
+          // Atualiza indicadores visuais
+          headers.forEach(h => h.querySelector('.sort-indicator').textContent = '');
+          const ind = hdr.querySelector('.sort-indicator');
+          ind.textContent = sortDir === 'asc' ? '▲' : '▼';
+          renderTable();
+        });
+      });
     }
 
     function exportToCSV() {
@@ -816,6 +862,8 @@
         return '-';
       }
     }
+    // Configura ordenação na tabela de árvores
+    setupSortListeners();
   </script>
   <script>
     initializeConsentBanner('G-F4Q29QNTQV', 'https://higuchip.github.io/inventario_app/politica-de-privacidade.html');
