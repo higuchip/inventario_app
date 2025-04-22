@@ -85,6 +85,26 @@
             border-radius: 3px;
             font-family: monospace;
         }
+        .warning-box {
+            background-color: #fff3cd; /* Amarelo claro */
+            border-left: 5px solid #ffeeba; /* Amarelo */
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box strong {
+            color: #856404; /* Marrom amarelado */
+        }
+         .critical-warning-box {
+            background-color: #f8d7da; /* Vermelho claro */
+            border-left: 5px solid #f5c6cb; /* Vermelho */
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .critical-warning-box strong {
+            color: #721c24; /* Vermelho escuro */
+        }
     </style>
 </head>
 <body>
@@ -94,9 +114,17 @@
     <p>Olá!</p>
     <p>Muito obrigado por dedicar seu tempo para testar o <strong>Planilha Florestal</strong>. Seu feedback é extremamente valioso para nos ajudar a identificar problemas, melhorar a usabilidade e garantir que o aplicativo atenda às suas necessidades antes de um lançamento mais amplo.</p>
 
+    <h2>Sobre o Projeto</h2>
+    <p>O Planilha Florestal App é um Progressive Web App (PWA) otimizado para a coleta e gerenciamento de dados de inventário florestal diretamente em campo. Ele permite criar projetos, registrar informações detalhadas de árvores, visualizar os dados e exportá-los, com foco no funcionamento offline.</p>
+
+    <div class="critical-warning-box">
+        <h2>⚠️ ATENÇÃO: Status Beta e Risco de Dados ⚠️</h2>
+        <p>Este aplicativo está em fase de desenvolvimento e testes (Beta). <strong>NÃO HÁ GARANTIAS</strong> de funcionamento perfeito ou de preservação dos dados inseridos. Podem ocorrer bugs, perda de dados ou comportamento inesperado.</p>
+        <p><strong>UTILIZE POR SUA CONTA E RISCO.</strong> O desenvolvedor não se responsabiliza por qualquer perda de dados ou problemas decorrentes do uso do aplicativo nesta fase.</p>
+    </div>
+
     <h2>Objetivo do Teste</h2>
     <p>
-        <!-- Descreva aqui o que você quer que os testadores foquem. Seja geral ou específico. -->
         Nesta fase, gostaríamos que você usasse o aplicativo como usaria no seu dia a dia de coleta de dados.
         Nosso objetivo principal é testar a funcionalidade geral, a facilidade de uso, a estabilidade (especialmente offline)
         e o processo de instalação do aplicativo (PWA).
@@ -106,6 +134,17 @@
     <p>Clique no botão abaixo para abrir a versão mais recente do Planilha Florestal:</p>
     <a href="./" class="button-link">Abrir Planilha Florestal (Beta)</a>
     <p class="note" style="text-align:center;">O link acima leva para: <code>https://higuchip.github.io/inventario_app/</code></p>
+
+    <h2>Funcionalidades Principais</h2>
+    <ul>
+        <li>Gerenciamento de Projetos (Criar/Excluir).</li>
+        <li>Coleta Detalhada de Árvores (ID, Espécie, CAP - Simples/Múltiplo, Altura, GPS, Obs).</li>
+        <li>Obtenção de Coordenadas GPS (requer permissão/sinal).</li>
+        <li>Funcionamento e Armazenamento 100% Offline (IndexedDB).</li>
+        <li>Instalável como PWA (Android/iOS/Desktop).</li>
+        <li>Visualização, Edição e Exclusão de dados.</li>
+        <li>Exportação de dados de árvores para CSV.</li>
+    </ul>
 
     <h2>Instruções Básicas e Instalação</h2>
     <ul>
@@ -120,9 +159,15 @@
         <li><strong>Uso Offline:</strong> Após visitar o app online pela primeira vez (e talvez instalar), ele deve funcionar mesmo sem conexão com a internet. Seus dados são salvos no seu dispositivo.</li>
     </ul>
 
+    <div class="warning-box">
+        <h2>🚨 IMPORTANTE: Backup dos Dados e Desinstalação 🚨</h2>
+        <p><strong>Armazenamento 100% Local:</strong> Todos os seus dados (projetos, árvores) ficam salvos <strong>apenas no seu dispositivo</strong> (no armazenamento do navegador).</p>
+        <p><strong>Risco REAL de Perda de Dados:</strong> Se você limpar os dados do navegador, usar um navegador/perfil diferente, tiver problemas no sistema ou <strong>desinstalar o PWA</strong>, seus dados serão <strong>PERDIDOS PERMANENTEMENTE</strong>.</p>
+        <p><strong>Faça Backup via CSV REGULARMENTE:</strong> A única forma de proteger seus dados é usando o botão <strong>"Exportar CSV"</strong> (na tela "Ver Árvores") com frequência e salvando o arquivo em local seguro.</p>
+    </div>
+
     <h2>O que Gostaríamos que Você Testasse Especificamente</h2>
     <ul>
-        <!-- Liste aqui tarefas ou áreas específicas para focar -->
         <li>Criação e exclusão de múltiplos projetos.</li>
         <li>Adição de várias árvores a um projeto, incluindo diferentes tipos de dados.</li>
         <li>Verificação da lista de árvores (visualização).</li>
@@ -132,9 +177,15 @@
         <li>Navegação geral e facilidade de encontrar as opções.</li>
     </ul>
 
+    <h2>Solução de Problemas Básicos</h2>
+    <ul>
+        <li><strong>App não carrega / estranho:</strong> Tente fechar e reabrir o PWA, ou recarregar a página (use `Ctrl+Shift+R` ou `Cmd+Shift+R` no desktop para forçar).</li>
+        <li><strong>GPS não funciona:</strong> Verifique as permissões de localização para o site/app nas configurações do seu navegador/sistema e se você tem sinal GPS (geralmente requer céu aberto).</li>
+        <li><strong>Último recurso (Apaga Dados!):</strong> Se nada funcionar, você pode tentar limpar os dados do site "Planilha Florestal" nas configurações do navegador. **Lembre-se que isso APAGARÁ todos os seus projetos e árvores.** Faça backup CSV antes, se possível.</li>
+    </ul>
+
     <h2>Problemas Conhecidos</h2>
     <ul>
-        <!-- Se houver bugs que você já sabe que existem, liste-os aqui para evitar relatórios duplicados -->
         <li>No momento, não há problemas conhecidos específicos para esta versão de teste.</li>
     </ul>
 
@@ -153,7 +204,6 @@
 
     <h2>Privacidade</h2>
     <p>Seus dados de inventário (projetos, árvores) são salvos apenas no seu dispositivo. Se você consentir, usamos o Google Analytics para entender como o aplicativo é usado. Para mais detalhes, consulte nossa <a href="./politica-de-privacidade.html" target="_blank">Política de Privacidade</a>.</p>
-
 
     <hr style="margin-top: 40px; border: none; border-top: 1px solid #ddd;">
     <p style="text-align:center;" class="note">Mais uma vez, obrigado pela sua ajuda!</p>
