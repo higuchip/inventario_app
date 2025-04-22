@@ -929,52 +929,63 @@
                     }
                 }
         
-                const arvore = {
-                   parcela: document.getElementById('parcela').value.trim(),
-                   idArvoreUsuario: idArvoreUsuarioValue,
-                   especie: especieValue,
-                   cap: capValue,
-                   altura: alturaValue,
-                   coordenadas: document.getElementById('coordenadas').value || null,
-                   observacao: document.getElementById('observacao').value || null,
-                   projetoId: currentProjectId,
-                   dataRegistro: new Date().toISOString(),
-                   // Adicionar dados de troncos múltiplos
-                   troncoMultiplo: isTroncoMultiplo,
-                   capsIndividuais: isTroncoMultiplo ? capsIndividuais : []
-                };
-        
-                if (!db) {
-                     console.error('DB não disponível ao tentar salvar!');
-                     showToast('Erro: Conexão com banco de dados perdida.', 'error');
-                     return;
-                }
-                
-                const transaction = db.transaction(['arvores'], 'readwrite');
-                const store = transaction.objectStore('arvores');
-                let request;
-                
-                if (currentTreeId) { 
-                  arvore.id = currentTreeId;
-                  request = store.put(arvore);
-                } else {
-                  request = store.add(arvore);
-                }
-        
-                request.onsuccess = function() {
-                   showToast(currentTreeId ? 'Árvore atualizada!' : 'Árvore salva!');
-                   if (!currentTreeId) {
+                // Verifica duplicidade de ID da Árvore no projeto
+                const readTx = db.transaction(['arvores'], 'readonly');
+                const readStore = readTx.objectStore('arvores');
+                const idx = readStore.index('projetoId');
+                const getAllReq = idx.getAll(currentProjectId);
+                getAllReq.onsuccess = function() {
+                  const allTrees = getAllReq.result || [];
+                  const duplicate = allTrees.find(t =>
+                    t.idArvoreUsuario === idArvoreUsuarioValue &&
+                    (currentTreeId ? t.id !== currentTreeId : true)
+                  );
+                  if (duplicate) {
+                    showToast(`O ID da Árvore "${idArvoreUsuarioValue}" já existe neste projeto.`, 'error');
+                    return;
+                  }
+                  // Monta objeto árvore após validações
+                  const arvore = {
+                    parcela: document.getElementById('parcela').value.trim(),
+                    idArvoreUsuario: idArvoreUsuarioValue,
+                    especie: especieValue,
+                    cap: capValue,
+                    altura: alturaValue,
+                    coordenadas: document.getElementById('coordenadas').value || null,
+                    observacao: document.getElementById('observacao').value || null,
+                    projetoId: currentProjectId,
+                    dataRegistro: new Date().toISOString(),
+                    troncoMultiplo: isTroncoMultiplo,
+                    capsIndividuais: isTroncoMultiplo ? capsIndividuais : []
+                  };
+                  // Grava no IndexedDB
+                  const writeTx = db.transaction(['arvores'], 'readwrite');
+                  const writeStore = writeTx.objectStore('arvores');
+                  let req;
+                  if (currentTreeId) {
+                    arvore.id = currentTreeId;
+                    req = writeStore.put(arvore);
+                  } else {
+                    req = writeStore.add(arvore);
+                  }
+                  req.onsuccess = function() {
+                    showToast(currentTreeId ? 'Árvore atualizada!' : 'Árvore salva!');
+                    if (!currentTreeId) {
                       loadSpeciesSuggestions();
                       document.getElementById('treeForm').reset();
                       document.getElementById('save-update-btn').textContent = 'Salvar Árvore';
-                   } else {
+                    } else {
                       setTimeout(() => window.location.href = 'view_trees.html', 1500);
-                   }
+                    }
+                  };
+                  req.onerror = function(event) {
+                    console.error('Erro ao salvar árvore:', event.target.error);
+                    showToast('Erro ao salvar a árvore.', 'error');
+                  };
                 };
-        
-                request.onerror = function(event) {
-                   console.error('Erro ao salvar árvore:', event.target.error);
-                   showToast('Erro ao salvar a árvore.', 'error');
+                getAllReq.onerror = function(event) {
+                  console.error('Erro ao verificar duplicidade de ID:', event.target.error);
+                  showToast('Erro ao verificar duplicidade do ID da árvore.', 'error');
                 };
              });
              form.dataset.listenerAttached = 'true';
