@@ -1,4 +1,5 @@
-const CACHE_NAME = 'forest-inventory-v1';
+// Versão do cache; incremente para forçar limpeza de cache e atualização do Service Worker
+const CACHE_NAME = 'forest-inventory-v2';
 const urlsToCache = [
   '.',
   'index.html',
@@ -13,10 +14,12 @@ const urlsToCache = [
 
 // Instalação do Service Worker
 self.addEventListener('install', event => {
+  // Força o Service Worker a ativar imediatamente após instalação
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Cache aberto');
+        console.log('Cache aberto e URLs adicionadas:', CACHE_NAME);
         return cache.addAll(urlsToCache);
       })
   );
@@ -29,10 +32,15 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Removendo cache antigo:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    })
+    .then(() => {
+      // Assume o controle imediato das páginas abertas
+      return self.clients.claim();
     })
   );
 });
