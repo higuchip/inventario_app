@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Beta - Planilha Florestal</title>
+    <script src="consent-banner.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.7;
+            margin: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        h1, h2 {
+            color: #1B5E20; /* Verde escuro do tema */
+            border-bottom: 2px solid #4CAF50; /* Verde claro */
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: none;
+            margin-bottom: 30px;
+        }
+        p, li {
+            font-size: 1rem;
+        }
+        a {
+            color: #1976D2; /* Azul */
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        strong {
+            font-weight: 600;
+        }
+        ul {
+            margin-left: 20px;
+            padding-left: 15px;
+        }
+        .button-link {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #2E7D32; /* Verde primário */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 20px auto;
+            display: block;
+            width: fit-content;
+            transition: background-color 0.2s ease;
+        }
+        .button-link:hover {
+            background-color: #1B5E20; /* Verde escuro */
+            text-decoration: none;
+        }
+        .feedback-info {
+            background-color: #e7f3e8;
+            padding: 15px;
+            border-left: 4px solid #4CAF50;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #555;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Bem-vindo ao Teste Beta do Planilha Florestal! 🌳</h1>
+
+    <p>Olá!</p>
+    <p>Muito obrigado por dedicar seu tempo para testar o <strong>Planilha Florestal</strong>. Seu feedback é extremamente valioso para nos ajudar a identificar problemas, melhorar a usabilidade e garantir que o aplicativo atenda às suas necessidades antes de um lançamento mais amplo.</p>
+
+    <h2>Objetivo do Teste</h2>
+    <p>
+        <!-- Descreva aqui o que você quer que os testadores foquem. Seja geral ou específico. -->
+        Nesta fase, gostaríamos que você usasse o aplicativo como usaria no seu dia a dia de coleta de dados.
+        Nosso objetivo principal é testar a funcionalidade geral, a facilidade de uso, a estabilidade (especialmente offline)
+        e o processo de instalação do aplicativo (PWA).
+    </p>
+
+    <h2>Acessando o Aplicativo</h2>
+    <p>Clique no botão abaixo para abrir a versão mais recente do Planilha Florestal:</p>
+    <a href="./" class="button-link">Abrir Planilha Florestal (Beta)</a>
+    <p class="note" style="text-align:center;">O link acima leva para: <code>https://higuchip.github.io/inventario_app/</code></p>
+
+    <h2>Instruções Básicas e Instalação</h2>
+    <ul>
+        <li>A tela inicial mostrará seus projetos. Use o botão "Novo Projeto" para começar.</li>
+        <li>Dentro de um projeto, você pode "Adicionar Árvore" ou "Ver Árvores".</li>
+        <li><strong>Instalação (Recomendado):</strong> Para uma experiência mais parecida com um aplicativo nativo e uso offline facilitado, recomendamos instalar o PWA:
+            <ul>
+                <li><strong>Android/Desktop (Chrome/Edge):</strong> Procure pelo botão "Instalar Aplicativo" (ou similar) que aparecerá no cabeçalho do app ou nas opções do navegador.</li>
+                <li><strong>iOS (iPhone/iPad):</strong> Toque no botão "Compartilhar" <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Share_iOS_blue.svg/512px-Share_iOS_blue.svg.png" alt="Icone Compartilhar iOS" style="height:1em; vertical-align:middle;"> no Safari, role para baixo e selecione "Adicionar à Tela de Início".</li>
+            </ul>
+        </li>
+        <li><strong>Uso Offline:</strong> Após visitar o app online pela primeira vez (e talvez instalar), ele deve funcionar mesmo sem conexão com a internet. Seus dados são salvos no seu dispositivo.</li>
+    </ul>
+
+    <h2>O que Gostaríamos que Você Testasse Especificamente</h2>
+    <ul>
+        <!-- Liste aqui tarefas ou áreas específicas para focar -->
+        <li>Criação e exclusão de múltiplos projetos.</li>
+        <li>Adição de várias árvores a um projeto, incluindo diferentes tipos de dados.</li>
+        <li>Verificação da lista de árvores (visualização).</li>
+        <li>Tentar criar um projeto com o mesmo nome/ano de um existente (deve dar erro).</li>
+        <li>Uso do aplicativo completamente offline após um carregamento inicial.</li>
+        <li>Processo de instalação do PWA no seu dispositivo principal.</li>
+        <li>Navegação geral e facilidade de encontrar as opções.</li>
+    </ul>
+
+    <h2>Problemas Conhecidos</h2>
+    <ul>
+        <!-- Se houver bugs que você já sabe que existem, liste-os aqui para evitar relatórios duplicados -->
+        <li>No momento, não há problemas conhecidos específicos para esta versão de teste.</li>
+    </ul>
+
+    <h2>Como Enviar seu Feedback</h2>
+    <div class="feedback-info">
+        <p><strong>Sua opinião é muito importante!</strong> Por favor, envie seus comentários, sugestões e relatos de erro para:</p>
+        <p><strong>E-mail:</strong> <a href="mailto: higuchip@gmail.com"><strong>higuchip@gmail.com</strong></a></p>
+        <p><em><strong>Sugestão:</strong> Para nos ajudar a organizar, por favor, use um assunto como "Feedback Beta Planilha Florestal" ou "Erro Beta Planilha Florestal".</em></p>
+        <p>Ao relatar um erro, por favor, inclua (se possível):</p>
+        <ul>
+            <li>O que você estava fazendo quando o erro ocorreu.</li>
+            <li>Qualquer mensagem de erro que apareceu.</li>
+            <li>O tipo de dispositivo e navegador que você estava usando.</li>
+        </ul>
+    </div>
+
+    <h2>Privacidade</h2>
+    <p>Seus dados de inventário (projetos, árvores) são salvos apenas no seu dispositivo. Se você consentir, usamos o Google Analytics para entender como o aplicativo é usado. Para mais detalhes, consulte nossa <a href="./politica-de-privacidade.html" target="_blank">Política de Privacidade</a>.</p>
+
+
+    <hr style="margin-top: 40px; border: none; border-top: 1px solid #ddd;">
+    <p style="text-align:center;" class="note">Mais uma vez, obrigado pela sua ajuda!</p>
+
+    <script>
+      
+      initializeConsentBanner(
+        'G-F4Q29QNTQV', // 
+        './politica-de-privacidade.html'
+      );
+    </script>
+ß
+</body>
+</html> 
