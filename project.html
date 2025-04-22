@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
   <script src="install-button.js"></script>
+  <script src="consent-banner.js"></script>
   <style>
     :root {
       --primary-color: #2E7D32;
@@ -780,6 +781,11 @@
         showToast('Erro ao excluir o projeto. Por favor, tente novamente.', 'error');
       };
     }
+  </script>
+
+  <!-- Inicializa o banner e GA -->
+  <script>
+    initializeConsentBanner('G-F4Q29QNTQV', 'https://higuchip.github.io/inventario_app/politica-de-privacidade.html');
   </script>
 </body>
 </html>
