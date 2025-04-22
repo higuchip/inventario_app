@@ -878,9 +878,33 @@
                                
                 const idArvoreUsuarioValue = document.getElementById('idArvoreUsuario').value.trim();
                 const especieValue = document.getElementById('especie').value.trim();
-                const capValue = parseFloat(document.getElementById('cap').value);
-                const alturaInput = document.getElementById('altura').value;
-                let alturaValue = alturaInput ? parseFloat(alturaInput) : null;
+                // Validação de CAP e Altura sem caracteres inválidos
+                const capRaw = document.getElementById('cap').value.trim();
+                const alturaRaw = document.getElementById('altura').value.trim();
+                const numericRegex = /^[0-9]+([\.,][0-9]+)?$/;
+                // Valida CAP: deve ser número >0 e sem letras ou caracteres especiais
+                if (!numericRegex.test(capRaw)) {
+                    showToast('CAP inválido: use apenas números e ponto ou vírgula decimal.', 'error');
+                    return;
+                }
+                const capValue = parseFloat(capRaw.replace(',', '.'));
+                if (isNaN(capValue) || capValue <= 0) {
+                    showToast('CAP deve ser um número maior que zero.', 'error');
+                    return;
+                }
+                // Valida Altura: se informada, deve ser número >0 e sem caracteres inválidos
+                let alturaValue = null;
+                if (alturaRaw) {
+                    if (!numericRegex.test(alturaRaw)) {
+                        showToast('Altura inválida: use apenas números e ponto ou vírgula decimal.', 'error');
+                        return;
+                    }
+                    alturaValue = parseFloat(alturaRaw.replace(',', '.'));
+                    if (isNaN(alturaValue) || alturaValue <= 0) {
+                        showToast('Altura deve ser um número maior que zero.', 'error');
+                        return;
+                    }
+                }
                 const isTroncoMultiplo = document.getElementById('troncoMultiplo').checked;
         
                 if (especieValue === '') {
@@ -892,15 +916,6 @@
                    // Esta validação é uma segurança extra, 'required' deve pegar antes
                    showToast('O campo ID da Árvore é obrigatório.', 'error');
                    return;
-                }
-                // Validar o CAP
-                if (isNaN(capValue)) {
-                    showToast('Valor inválido para CAP.', 'error');
-                    return;
-                }
-                if (alturaInput && isNaN(alturaValue)) {
-                    showToast('Valor inválido para Altura.', 'error');
-                    return;
                 }
                 
                 // Coletar os valores individuais de CAP para troncos múltiplos
