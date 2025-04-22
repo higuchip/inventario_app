@@ -662,7 +662,8 @@
           const isTroncoMultiplo = arvore.troncoMultiplo ? 'Sim' : 'Não';
           let capsIndividuais = '';
           if (arvore.troncoMultiplo && Array.isArray(arvore.capsIndividuais) && arvore.capsIndividuais.length > 0) {
-            capsIndividuais = '"' + arvore.capsIndividuais.map(c => c.toString().replace('.', ',')).join(' | ') + '"';
+            // Usa '+' como operador para múltiplos troncos
+            capsIndividuais = '"' + arvore.capsIndividuais.map(c => c.toString().replace('.', ',')).join(' + ') + '"';
           }
 
           const dataRegistro = arvore.dataRegistro ? new Date(arvore.dataRegistro).toLocaleString() : '';
@@ -821,7 +822,10 @@
           const troncoMultiplo = cols[4].toLowerCase() === 'sim';
           let capsIndividuais = [];
           if (troncoMultiplo && cols[5]) {
-            capsIndividuais = cols[5].split('|').map(s => parseFloat(s.replace(',', '.')) || 0);
+            // Usa '+' como separador para múltiplos troncos
+            capsIndividuais = cols[5]
+              .split(/\s*\+\s*/)
+              .map(s => parseFloat(s.replace(',', '.')) || 0);
           }
           const altura = parseFloat(cols[6].replace(',', '.')) || null;
           const latitude = cols[7].replace(',', '.').trim();
