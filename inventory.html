@@ -337,6 +337,89 @@
       font-weight: 500;
     }
     
+    /* Barra de Parcela */
+    .parcela-bar {
+      background-color: rgba(46, 125, 50, 0.06);
+      border: 1px solid rgba(46, 125, 50, 0.25);
+      border-radius: var(--border-radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+
+    .parcela-bar label {
+      font-size: 14px;
+      color: var(--primary-dark);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .parcela-select-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .parcela-select-row input {
+      flex: 1;
+    }
+
+    .parcela-confirm-btn {
+      background-color: var(--primary-color);
+      color: white;
+      width: auto !important;
+      white-space: nowrap;
+      padding: 12px 20px;
+    }
+
+    .parcela-confirm-btn:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .parcela-locked {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .parcela-locked.active {
+      display: flex;
+    }
+
+    .parcela-badge {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .parcela-count {
+      color: var(--text-light);
+      font-size: 14px;
+    }
+
+    .parcela-change-btn {
+      background-color: transparent;
+      color: var(--accent-color);
+      border: 1px solid var(--accent-color);
+      width: auto !important;
+      padding: 6px 14px;
+      font-size: 13px;
+      margin-left: auto;
+    }
+
+    .parcela-change-btn:hover {
+      background-color: rgba(25, 118, 210, 0.05);
+      box-shadow: none;
+    }
+
+    #treeForm.form-disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
     /* Responsivo */
     @media (max-width: 600px) {
       .container {
@@ -382,17 +465,26 @@
     </div>
     
     <div class="button-group">
-      <button class="back-btn" onclick="window.location.href='project.html'">
+      <button class="back-btn" onclick="clearParcelaSession(); window.location.href='project.html'">
         <i class="icon">&#8592;</i> Voltar ao Projeto
       </button>
     </div>
 
-    <form id="treeForm">
-      <div class="form-group">
-        <label for="parcela">Parcela:</label>
-        <input type="text" id="parcela" required>
+    <div class="parcela-bar" id="parcelaBar">
+      <label>Parcela atual</label>
+      <div class="parcela-select-row" id="parcelaSelectRow">
+        <input type="text" id="parcelaInput" list="parcelaDatalist" placeholder="Digite ou selecione a parcela">
+        <datalist id="parcelaDatalist"></datalist>
+        <button type="button" class="parcela-confirm-btn" onclick="confirmParcela()">Confirmar</button>
       </div>
+      <div class="parcela-locked" id="parcelaLocked">
+        <span class="parcela-badge" id="parcelaBadge"></span>
+        <span class="parcela-count" id="parcelaCount"></span>
+        <button type="button" class="parcela-change-btn" onclick="changeParcela()">Trocar</button>
+      </div>
+    </div>
 
+    <form id="treeForm" class="form-disabled">
       <div class="form-group">
         <label for="idArvoreUsuario">ID da Árvore (único):</label>
         <input type="text" id="idArvoreUsuario" required>
@@ -490,9 +582,11 @@
 
       if (event.persisted) {
           if (!dbSeemsValid) {
-              initializeApp(); 
+              initializeApp();
           } else {
-              loadSpeciesSuggestions(); 
+              loadSpeciesSuggestions();
+              loadParcelaSuggestions();
+              if (!currentParcela) restoreParcelaSession();
           }
       }
     });
@@ -511,6 +605,7 @@
     let autocompleteSetupDone = false;
     let especieInput;
     let autocompleteList;
+    let currentParcela = null;
     
     // Função principal de inicialização
     function initializeApp() {
@@ -571,12 +666,15 @@
         currentTreeId = rawTreeId ? parseInt(rawTreeId) : null;
         // --- Fim da Validação de IDs ---
 
-        document.getElementById('save-update-btn').disabled = false;
+        // O botão save será habilitado quando parcela for confirmada (ou no modo edição)
 
-        loadSpeciesSuggestions(); 
+        loadSpeciesSuggestions();
+        loadParcelaSuggestions();
 
         if (currentTreeId) {
           loadTreeData();
+        } else {
+          restoreParcelaSession();
         }
       };
       
@@ -736,7 +834,6 @@
             return;
           }
 
-          document.getElementById('parcela').value = arvore.parcela || '';
           document.getElementById('idArvoreUsuario').value = arvore.idArvoreUsuario || '';
           document.getElementById('especie').value = arvore.especie || '';
           document.getElementById('cap').value = arvore.cap || '';
@@ -744,6 +841,18 @@
           document.getElementById('coordenadas').value = arvore.coordenadas || '';
           document.getElementById('observacao').value = arvore.observacao || '';
           document.getElementById('save-update-btn').textContent = 'Atualizar Árvore';
+
+          // Travar parcela no modo edição (somente leitura)
+          if (arvore.parcela) {
+            document.getElementById('parcelaInput').value = arvore.parcela;
+            currentParcela = arvore.parcela;
+            document.getElementById('parcelaSelectRow').style.display = 'none';
+            document.getElementById('parcelaLocked').classList.add('active');
+            document.getElementById('parcelaBadge').textContent = arvore.parcela;
+            document.querySelector('.parcela-change-btn').style.display = 'none';
+            document.getElementById('treeForm').classList.remove('form-disabled');
+            updateParcelaCount();
+          }
           
           // Carregar informações de troncos múltiplos, se existirem
           if (arvore.troncoMultiplo === true && Array.isArray(arvore.capsIndividuais) && arvore.capsIndividuais.length > 0) {
@@ -884,6 +993,100 @@
       console.log('getLocation -> Finalizada.'); // Log 7
     }
     
+    // --- Funções de Parcela ---
+    function loadParcelaSuggestions() {
+      if (!db) return;
+      try {
+        const tx = db.transaction(['arvores'], 'readonly');
+        const store = tx.objectStore('arvores');
+        const idx = store.index('projetoId');
+        const req = idx.getAll(currentProjectId);
+        req.onsuccess = function() {
+          const arvores = req.result || [];
+          const parcelas = [...new Set(arvores.map(a => a.parcela).filter(Boolean))].sort();
+          const datalist = document.getElementById('parcelaDatalist');
+          datalist.innerHTML = '';
+          parcelas.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            datalist.appendChild(opt);
+          });
+        };
+      } catch (e) {
+        console.error('Erro ao carregar parcelas:', e);
+      }
+    }
+
+    function confirmParcela() {
+      const input = document.getElementById('parcelaInput');
+      const nome = input.value.trim();
+      if (!nome) {
+        showToast('Digite o nome da parcela.', 'error');
+        input.focus();
+        return;
+      }
+      currentParcela = nome;
+      localStorage.setItem('currentParcela', nome);
+
+      // Trocar para estado travado
+      document.getElementById('parcelaSelectRow').style.display = 'none';
+      document.getElementById('parcelaLocked').classList.add('active');
+      document.getElementById('parcelaBadge').textContent = nome;
+
+      // Habilitar formulário
+      document.getElementById('treeForm').classList.remove('form-disabled');
+      document.getElementById('save-update-btn').disabled = false;
+
+      updateParcelaCount();
+
+      // Focar no ID da árvore
+      document.getElementById('idArvoreUsuario').focus();
+    }
+
+    function changeParcela() {
+      // Voltar para estado de seleção
+      document.getElementById('parcelaSelectRow').style.display = 'flex';
+      document.getElementById('parcelaLocked').classList.remove('active');
+      document.getElementById('parcelaInput').value = currentParcela || '';
+      document.getElementById('parcelaInput').focus();
+      currentParcela = null;
+
+      // Desabilitar formulário
+      document.getElementById('treeForm').classList.add('form-disabled');
+    }
+
+    function updateParcelaCount() {
+      if (!db || !currentParcela) return;
+      try {
+        const tx = db.transaction(['arvores'], 'readonly');
+        const store = tx.objectStore('arvores');
+        const idx = store.index('projetoId');
+        const req = idx.getAll(currentProjectId);
+        req.onsuccess = function() {
+          const arvores = req.result || [];
+          const count = arvores.filter(a => a.parcela === currentParcela).length;
+          document.getElementById('parcelaCount').textContent = count + (count === 1 ? ' arvore' : ' arvores') + ' nesta parcela';
+        };
+      } catch (e) {
+        console.error('Erro ao contar árvores da parcela:', e);
+      }
+    }
+
+    function clearParcelaSession() {
+      localStorage.removeItem('currentParcela');
+      currentParcela = null;
+    }
+
+    function restoreParcelaSession() {
+      const saved = localStorage.getItem('currentParcela');
+      if (saved && !currentTreeId) {
+        document.getElementById('parcelaInput').value = saved;
+        confirmParcela();
+      } else if (!currentTreeId) {
+        document.getElementById('parcelaInput').focus();
+      }
+    }
+
     // Nova função para encapsular o listener do form
     function setupFormSubmitListener() {
         const form = document.getElementById('treeForm');
@@ -976,7 +1179,7 @@
                   }
                   // Monta objeto árvore após validações
                   const arvore = {
-                    parcela: document.getElementById('parcela').value.trim(),
+                    parcela: currentParcela,
                     idArvoreUsuario: idArvoreUsuarioValue,
                     especie: especieValue,
                     cap: capValue,
@@ -1010,6 +1213,10 @@
                       document.getElementById('cap').disabled = false;
                       document.getElementById('capsContainer').innerHTML = '';
                       document.getElementById('capEquivalente').textContent = '0';
+                      // Parcela permanece - atualizar contador e focar no próximo campo
+                      updateParcelaCount();
+                      loadParcelaSuggestions();
+                      document.getElementById('idArvoreUsuario').focus();
                     } else {
                       setTimeout(() => window.location.href = 'view_trees.html', 1500);
                     }
