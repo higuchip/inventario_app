@@ -460,6 +460,53 @@
       font-size: 14px;
     }
 
+    .var-card {
+      background-color: var(--card-color);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 12px 16px;
+      margin-bottom: 10px;
+    }
+
+    .var-card-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-color);
+      margin-bottom: 8px;
+    }
+
+    .var-card-metrics {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .var-metric {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 60px;
+    }
+
+    .var-metric-value {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .var-metric-label {
+      font-size: 11px;
+      color: var(--text-light);
+      text-align: center;
+    }
+
+    .var-card-status {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-color);
+      font-size: 13px;
+    }
+
     @media (max-width: 600px) {
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -467,15 +514,6 @@
 
       .stat-value {
         font-size: 22px;
-      }
-
-      .stats-table {
-        font-size: 13px;
-      }
-
-      .stats-table th,
-      .stats-table td {
-        padding: 8px 10px;
       }
     }
 
@@ -1226,26 +1264,31 @@
         return;
       }
 
-      // Tabela compacta: só o essencial para decisão em campo
-      html += '<table class="stats-table">';
-      html += '<thead><tr><th>Variavel</th><th>CV (%)</th><th>Erro (%)</th><th>Parcelas</th><th>Status</th></tr></thead>';
-      html += '<tbody>';
-
+      // Cards por variável - funciona bem em qualquer tela
       stats.variaveis.forEach(v => {
-        const statusIcon = v.suficiente === null ? '-' : v.suficiente ? '&#10003;' : '&#10007;';
-        const statusClass = v.suficiente === null ? '' : v.suficiente ? 'cv-good' : 'cv-bad';
-        const parcelasInfo = v.nOtimo !== null ? `${v.n}/${v.nOtimo}` : `${v.n}`;
+        const statusIcon = v.suficiente === null ? '' : v.suficiente ? '&#10003;' : '&#10007;';
+        const statusColor = v.suficiente === null ? '' : v.suficiente ? 'var(--primary-color)' : 'var(--error-color)';
+        const borderColor = v.suficiente === null ? 'var(--border-color)' : v.suficiente ? 'var(--primary-color)' : 'var(--error-color)';
 
-        html += `<tr>`;
-        html += `<td>${escapeHtml(v.label)}</td>`;
-        html += `<td style="text-align:center;" class="${cvClass(v.cv)}">${formatNum(v.cv, 1)}%</td>`;
-        html += `<td style="text-align:center;" class="${v.erroRel !== null ? cvClass(v.erroRel) : ''}">${v.erroRel !== null ? '&plusmn;' + formatNum(v.erroRel, 1) + '%' : '-'}</td>`;
-        html += `<td style="text-align:center;">${escapeHtml(parcelasInfo)}</td>`;
-        html += `<td style="text-align:center;" class="${statusClass}">${statusIcon}</td>`;
-        html += `</tr>`;
+        html += `<div class="var-card" style="border-left:4px solid ${borderColor};">`;
+        html += `<div class="var-card-header">${escapeHtml(v.label)}</div>`;
+        html += `<div class="var-card-metrics">`;
+        html += `<div class="var-metric"><div class="var-metric-value ${cvClass(v.cv)}">${formatNum(v.cv, 1)}%</div><div class="var-metric-label">CV</div></div>`;
+        html += `<div class="var-metric"><div class="var-metric-value ${v.erroRel !== null ? cvClass(v.erroRel) : ''}">&plusmn;${v.erroRel !== null ? formatNum(v.erroRel, 1) : '-'}%</div><div class="var-metric-label">Erro</div></div>`;
+        html += `<div class="var-metric"><div class="var-metric-value">${v.n}</div><div class="var-metric-label">Parcelas</div></div>`;
+        html += `<div class="var-metric"><div class="var-metric-value">${v.nOtimo !== null ? v.nOtimo : '-'}</div><div class="var-metric-label">Necessarias</div></div>`;
+        html += `</div>`;
+
+        if (v.suficiente !== null) {
+          if (v.suficiente) {
+            html += `<div class="var-card-status" style="color:var(--primary-color);"><strong>${statusIcon} OK</strong></div>`;
+          } else {
+            const faltam = v.nOtimo !== null ? v.nOtimo - v.n : '?';
+            html += `<div class="var-card-status" style="color:var(--error-color);"><strong>${statusIcon} Faltam ${faltam} parcela${faltam !== 1 ? 's' : ''}</strong></div>`;
+          }
+        }
+        html += `</div>`;
       });
-
-      html += '</tbody></table>';
 
       // Indicadores de suficiência - apenas os que falharam
       const insuficientes = stats.variaveis.filter(v => v.suficiente === false);
