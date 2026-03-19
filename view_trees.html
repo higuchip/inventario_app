@@ -1274,7 +1274,7 @@
 
       // Erro amostral
       html += '<div class="stats-error-row">';
-      html += '<strong>Erro amostral (&#945;=0,05):</strong><br>';
+      html += '<strong>Erro amostral (&#945;=0,05) &mdash; AAS:</strong><br>';
       if (stats.nArvores.erro !== null) {
         html += `N arvores: <strong class="${cvClass(stats.nArvores.erro)}">&plusmn;${formatNum(stats.nArvores.erro, 1)}%</strong> &nbsp; `;
       }
@@ -1284,6 +1284,7 @@
       if (stats.altura && stats.altura.erro !== null) {
         html += `Altura: <strong class="${cvClass(stats.altura.erro)}">&plusmn;${formatNum(stats.altura.erro, 1)}%</strong>`;
       }
+      html += '<br><span style="font-size:12px;color:var(--text-light);">Calculado por Amostragem Aleatoria Simples (AAS), sem fator de correcao para populacao finita.</span>';
       html += '</div>';
 
       content.innerHTML = html;
