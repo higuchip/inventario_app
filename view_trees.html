@@ -544,9 +544,9 @@
     <div class="stats-panel" id="statsPanel">
       <div class="stats-header" id="statsHeader" onclick="toggleStats()">
         <h3>Estatisticas do Projeto</h3>
-        <span class="stats-toggle" id="statsToggle">&#9660;</span>
+        <span class="stats-toggle expanded" id="statsToggle">&#9660;</span>
       </div>
-      <div class="stats-body" id="statsBody">
+      <div class="stats-body expanded" id="statsBody">
         <div class="stats-body-inner" id="statsContent">
           <div class="stats-empty">Carregando...</div>
         </div>
@@ -1206,7 +1206,7 @@
       const stats = calculateStats(arvores);
 
       if (!stats) {
-        content.innerHTML = '<div class="stats-empty">Sem dados para calcular estatisticas. Adicione arvores ao projeto.</div>';
+        content.innerHTML = '<div class="stats-empty">Sem dados. Adicione arvores ao projeto.</div>';
         return;
       }
 
@@ -1226,43 +1226,47 @@
         return;
       }
 
-      // Tabela completa IMA para cada variável
-      stats.variaveis.forEach(v => {
-        html += `<div style="margin-bottom:20px;">`;
-        html += `<h4 style="margin:0 0 8px 0;font-size:15px;color:var(--primary-dark);">${escapeHtml(v.label)}</h4>`;
-        html += '<table class="stats-table">';
-        html += '<tbody>';
-        html += `<tr><td>Media (x&#772;)</td><td style="text-align:right;">${formatNum(v.media, 4)}</td></tr>`;
-        html += `<tr><td>Variancia (s&#178;)</td><td style="text-align:right;">${formatNum(v.variancia, 6)}</td></tr>`;
-        html += `<tr><td>Desvio Padrao (s)</td><td style="text-align:right;">${formatNum(v.dp, 4)}</td></tr>`;
-        html += `<tr><td>Coeficiente de Variacao (%)</td><td style="text-align:right;" class="${cvClass(v.cv)}">${formatNum(v.cv, 2)}%</td></tr>`;
-        html += `<tr><td>Variancia da Media (s&#178;<sub>x&#772;</sub>)</td><td style="text-align:right;">${formatNum(v.varMedia, 6)}</td></tr>`;
-        html += `<tr><td>Erro Padrao da Media (s<sub>x&#772;</sub>)</td><td style="text-align:right;">${formatNum(v.erPadMedia, 4)}</td></tr>`;
-        html += `<tr><td>t tabelado (95%, gl=${v.n - 1})</td><td style="text-align:right;">${v.t !== null ? formatNum(v.t, 3) : '-'}</td></tr>`;
-        html += `<tr><td>Erro de Amostragem Absoluto</td><td style="text-align:right;">${formatNum(v.erroAbs, 4)}</td></tr>`;
-        html += `<tr><td>Erro de Amostragem Relativo (%)</td><td style="text-align:right;" class="${v.erroRel !== null ? cvClass(v.erroRel) : ''}">${v.erroRel !== null ? formatNum(v.erroRel, 2) + '%' : '-'}</td></tr>`;
-        html += `<tr><td>N&#186; otimo de parcelas (E&#8804;20%)</td><td style="text-align:right;">${v.nOtimo !== null ? v.nOtimo : '-'}</td></tr>`;
-        html += '</tbody></table>';
+      // Tabela compacta: só o essencial para decisão em campo
+      html += '<table class="stats-table">';
+      html += '<thead><tr><th>Variavel</th><th>CV (%)</th><th>Erro (%)</th><th>Parcelas</th><th>Status</th></tr></thead>';
+      html += '<tbody>';
 
-        // Indicador de suficiência amostral
-        if (v.suficiente !== null) {
-          if (v.suficiente) {
-            html += `<div style="margin-top:8px;padding:8px 12px;border-radius:var(--border-radius);background-color:rgba(46,125,50,0.08);color:var(--primary-dark);font-size:14px;font-weight:500;">&#10003; Suficiencia amostral atendida (erro ${formatNum(v.erroRel, 1)}% &#8804; 20%, p=0,95)</div>`;
-          } else {
-            const faltam = v.nOtimo !== null ? v.nOtimo - v.n : '?';
-            html += `<div style="margin-top:8px;padding:8px 12px;border-radius:var(--border-radius);background-color:rgba(211,47,47,0.08);color:var(--error-color);font-size:14px;font-weight:500;">&#10007; Suficiencia amostral NAO atendida (erro ${formatNum(v.erroRel, 1)}% &gt; 20%). Necessarias ${v.nOtimo !== null ? v.nOtimo : '?'} parcelas (faltam ${faltam}).</div>`;
-          }
-        }
-        html += '</div>';
+      stats.variaveis.forEach(v => {
+        const statusIcon = v.suficiente === null ? '-' : v.suficiente ? '&#10003;' : '&#10007;';
+        const statusClass = v.suficiente === null ? '' : v.suficiente ? 'cv-good' : 'cv-bad';
+        const parcelasInfo = v.nOtimo !== null ? `${v.n}/${v.nOtimo}` : `${v.n}`;
+
+        html += `<tr>`;
+        html += `<td>${escapeHtml(v.label)}</td>`;
+        html += `<td style="text-align:center;" class="${cvClass(v.cv)}">${formatNum(v.cv, 1)}%</td>`;
+        html += `<td style="text-align:center;" class="${v.erroRel !== null ? cvClass(v.erroRel) : ''}">${v.erroRel !== null ? '&plusmn;' + formatNum(v.erroRel, 1) + '%' : '-'}</td>`;
+        html += `<td style="text-align:center;">${escapeHtml(parcelasInfo)}</td>`;
+        html += `<td style="text-align:center;" class="${statusClass}">${statusIcon}</td>`;
+        html += `</tr>`;
       });
 
-      // Nota metodológica
-      html += '<div style="font-size:12px;color:var(--text-light);margin-top:12px;padding-top:12px;border-top:1px solid var(--border-color);">Amostragem Aleatoria Simples (AAS), sem fator de correcao para populacao finita. Limite de erro admissivel: 20% com 95% de probabilidade.</div>';
+      html += '</tbody></table>';
+
+      // Indicadores de suficiência - apenas os que falharam
+      const insuficientes = stats.variaveis.filter(v => v.suficiente === false);
+      if (insuficientes.length > 0) {
+        const maxFaltam = Math.max(...insuficientes.map(v => (v.nOtimo || 0) - v.n));
+        html += `<div style="margin-top:12px;padding:10px 14px;border-radius:var(--border-radius);background-color:rgba(211,47,47,0.08);color:var(--error-color);font-size:14px;">`;
+        html += `<strong>Amostragem insuficiente.</strong> Necessarias mais ${maxFaltam} parcela${maxFaltam !== 1 ? 's' : ''} para atender erro &#8804;20% (p=0,95).`;
+        html += `</div>`;
+      } else {
+        html += `<div style="margin-top:12px;padding:10px 14px;border-radius:var(--border-radius);background-color:rgba(46,125,50,0.08);color:var(--primary-dark);font-size:14px;">`;
+        html += `<strong>&#10003; Suficiencia amostral atendida</strong> para todas as variaveis (erro &#8804;20%, p=0,95).`;
+        html += `</div>`;
+      }
+
+      // Nota metodológica compacta
+      html += '<div style="font-size:11px;color:var(--text-light);margin-top:10px;">AAS. Parcelas = atual/necessarias.</div>';
 
       content.innerHTML = html;
     }
 
-    let statsExpanded = false;
+    let statsExpanded = true;
     function toggleStats() {
       statsExpanded = !statsExpanded;
       document.getElementById('statsBody').classList.toggle('expanded', statsExpanded);
