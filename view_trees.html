@@ -323,7 +323,162 @@
     .icon {
       font-style: normal;
     }
-    
+
+    /* Painel de Estatísticas */
+    .stats-panel {
+      margin-bottom: 24px;
+      border-radius: var(--border-radius);
+      border: 1px solid rgba(46, 125, 50, 0.2);
+      background-color: rgba(46, 125, 50, 0.03);
+      overflow: hidden;
+    }
+
+    .stats-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color var(--animation-speed);
+    }
+
+    .stats-header:hover {
+      background-color: rgba(46, 125, 50, 0.08);
+    }
+
+    .stats-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stats-toggle {
+      font-size: 12px;
+      color: var(--text-light);
+      transition: transform 0.3s ease;
+    }
+
+    .stats-toggle.expanded {
+      transform: rotate(180deg);
+    }
+
+    .stats-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .stats-body.expanded {
+      max-height: 800px;
+    }
+
+    .stats-body-inner {
+      padding: 0 20px 20px 20px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background-color: var(--card-color);
+      border-radius: var(--border-radius);
+      padding: 14px;
+      text-align: center;
+      border: 1px solid var(--border-color);
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .stats-table th,
+    .stats-table td {
+      padding: 10px 14px;
+      text-align: right;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .stats-table th:first-child,
+    .stats-table td:first-child {
+      text-align: left;
+    }
+
+    .stats-table th {
+      background-color: rgba(46, 125, 50, 0.06);
+      font-weight: 500;
+      color: var(--primary-dark);
+      font-size: 13px;
+      position: static;
+    }
+
+    .stats-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .cv-good { color: var(--primary-color); font-weight: 600; }
+    .cv-warn { color: var(--warning-color); font-weight: 600; }
+    .cv-bad { color: var(--error-color); font-weight: 600; }
+
+    .stats-error-row {
+      background-color: rgba(25, 118, 210, 0.04);
+      font-size: 14px;
+      padding: 10px 14px;
+      border-radius: var(--border-radius);
+      color: var(--text-color);
+      line-height: 1.8;
+    }
+
+    .stats-empty {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-light);
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .stat-value {
+        font-size: 22px;
+      }
+
+      .stats-table {
+        font-size: 13px;
+      }
+
+      .stats-table th,
+      .stats-table td {
+        padding: 8px 10px;
+      }
+    }
+
     @keyframes slideIn {
       from {
         transform: translateX(30px);
@@ -384,6 +539,18 @@
     
     <div class="project-info">
       <h2 id="projectTitle">Carregando informações do projeto...</h2>
+    </div>
+
+    <div class="stats-panel" id="statsPanel">
+      <div class="stats-header" id="statsHeader" onclick="toggleStats()">
+        <h3>Estatisticas do Projeto</h3>
+        <span class="stats-toggle" id="statsToggle">&#9660;</span>
+      </div>
+      <div class="stats-body" id="statsBody">
+        <div class="stats-body-inner" id="statsContent">
+          <div class="stats-empty">Carregando...</div>
+        </div>
+      </div>
     </div>
 
     <div class="button-group">
@@ -587,6 +754,9 @@
 
     // Renderiza a tabela de árvores aplicando ordenação se definida
     function renderTable() {
+      // Atualizar painel de estatísticas
+      renderStatsPanel(arvoresList);
+
       const tbody = document.getElementById('treesTableBody');
       tbody.innerHTML = '';
       if (!arvoresList || arvoresList.length === 0) {
@@ -913,6 +1083,219 @@
         return '-';
       }
     }
+    // Tabela t de Student (bicaudal, alpha=0.05)
+    const T_TABLE = {
+      1:12.706, 2:4.303, 3:3.182, 4:2.776, 5:2.571,
+      6:2.447, 7:2.365, 8:2.306, 9:2.262, 10:2.228,
+      11:2.201, 12:2.179, 13:2.160, 14:2.145, 15:2.131,
+      16:2.120, 17:2.110, 18:2.101, 19:2.093, 20:2.086,
+      21:2.080, 22:2.074, 23:2.069, 24:2.064, 25:2.060,
+      26:2.056, 27:2.052, 28:2.048, 29:2.045, 30:2.042,
+      40:2.021, 60:2.000, 120:1.980
+    };
+
+    function getTValue(df) {
+      if (df <= 0) return null;
+      if (T_TABLE[df]) return T_TABLE[df];
+      // Interpolação para valores intermediários
+      const keys = Object.keys(T_TABLE).map(Number).sort((a, b) => a - b);
+      if (df > keys[keys.length - 1]) return 1.960; // aproximação para df infinito
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (df > keys[i] && df < keys[i + 1]) {
+          const ratio = (df - keys[i]) / (keys[i + 1] - keys[i]);
+          return T_TABLE[keys[i]] + ratio * (T_TABLE[keys[i + 1]] - T_TABLE[keys[i]]);
+        }
+      }
+      return 1.960;
+    }
+
+    function calculateStats(arvores) {
+      if (!arvores || arvores.length === 0) return null;
+
+      const totalArvores = arvores.length;
+      const parcelas = [...new Set(arvores.map(a => a.parcela))];
+      const nParcelas = parcelas.length;
+      const especies = [...new Set(arvores.map(a => a.especie).filter(Boolean))];
+      const nEspecies = especies.length;
+      const troncoMultiplo = arvores.filter(a => a.troncoMultiplo).length;
+
+      // Agrupar por parcela
+      const porParcela = {};
+      parcelas.forEach(p => { porParcela[p] = []; });
+      arvores.forEach(a => {
+        if (porParcela[a.parcela]) porParcela[a.parcela].push(a);
+      });
+
+      // N árvores por parcela
+      const nPorParcela = parcelas.map(p => porParcela[p].length);
+
+      // Área basal por parcela: g = CAP² / (4π) em cm², converter para m² (/10000)
+      const gPorParcela = parcelas.map(p => {
+        return porParcela[p].reduce((sum, a) => {
+          const cap = parseFloat(a.cap) || 0;
+          return sum + (cap * cap) / (4 * Math.PI * 10000);
+        }, 0);
+      });
+
+      // Altura média por parcela (somente árvores com altura)
+      const altPorParcela = [];
+      let temAltura = false;
+      parcelas.forEach(p => {
+        const alturas = porParcela[p]
+          .map(a => parseFloat(a.altura))
+          .filter(h => !isNaN(h) && h > 0);
+        if (alturas.length > 0) {
+          temAltura = true;
+          altPorParcela.push(alturas.reduce((s, v) => s + v, 0) / alturas.length);
+        }
+      });
+
+      // Funções auxiliares
+      function media(arr) {
+        return arr.length === 0 ? 0 : arr.reduce((s, v) => s + v, 0) / arr.length;
+      }
+      function desvioPadrao(arr) {
+        if (arr.length < 2) return 0;
+        const m = media(arr);
+        const sumSq = arr.reduce((s, v) => s + Math.pow(v - m, 2), 0);
+        return Math.sqrt(sumSq / (arr.length - 1));
+      }
+      function cv(arr) {
+        const m = media(arr);
+        if (m === 0) return 0;
+        return (desvioPadrao(arr) / m) * 100;
+      }
+      function erroAmostral(arr) {
+        const n = arr.length;
+        if (n < 2) return null;
+        const dp = desvioPadrao(arr);
+        const m = media(arr);
+        if (m === 0) return null;
+        const t = getTValue(n - 1);
+        if (!t) return null;
+        const erroPct = (t * dp / (Math.sqrt(n) * m)) * 100;
+        return erroPct;
+      }
+
+      return {
+        totalArvores,
+        nParcelas,
+        nEspecies,
+        troncoMultiplo,
+        nArvores: {
+          media: media(nPorParcela),
+          dp: desvioPadrao(nPorParcela),
+          cv: cv(nPorParcela),
+          erro: erroAmostral(nPorParcela)
+        },
+        areaBasal: {
+          media: media(gPorParcela),
+          dp: desvioPadrao(gPorParcela),
+          cv: cv(gPorParcela),
+          erro: erroAmostral(gPorParcela)
+        },
+        altura: temAltura && altPorParcela.length >= 2 ? {
+          media: media(altPorParcela),
+          dp: desvioPadrao(altPorParcela),
+          cv: cv(altPorParcela),
+          erro: erroAmostral(altPorParcela)
+        } : null
+      };
+    }
+
+    function cvClass(val) {
+      if (val <= 20) return 'cv-good';
+      if (val <= 30) return 'cv-warn';
+      return 'cv-bad';
+    }
+
+    function formatNum(val, decimals = 2) {
+      if (val === null || val === undefined || isNaN(val)) return '-';
+      return val.toFixed(decimals).replace('.', ',');
+    }
+
+    function renderStatsPanel(arvores) {
+      const content = document.getElementById('statsContent');
+      const stats = calculateStats(arvores);
+
+      if (!stats) {
+        content.innerHTML = '<div class="stats-empty">Sem dados para calcular estatisticas. Adicione arvores ao projeto.</div>';
+        return;
+      }
+
+      let html = '';
+
+      // Grid de resumo
+      html += '<div class="stats-grid">';
+      html += `<div class="stat-card"><div class="stat-value">${stats.totalArvores}</div><div class="stat-label">Arvores</div></div>`;
+      html += `<div class="stat-card"><div class="stat-value">${stats.nParcelas}</div><div class="stat-label">Parcelas</div></div>`;
+      html += `<div class="stat-card"><div class="stat-value">${stats.nEspecies}</div><div class="stat-label">Especies</div></div>`;
+      html += `<div class="stat-card"><div class="stat-value">${stats.troncoMultiplo}</div><div class="stat-label">Troncos mult.</div></div>`;
+      html += '</div>';
+
+      if (stats.nParcelas < 2) {
+        html += '<div class="stats-empty">CV e erro amostral requerem pelo menos 2 parcelas.</div>';
+        content.innerHTML = html;
+        return;
+      }
+
+      // Tabela de CV
+      html += '<table class="stats-table">';
+      html += '<thead><tr><th>Variavel</th><th>Media/parc</th><th>DP</th><th>CV (%)</th></tr></thead>';
+      html += '<tbody>';
+
+      // N árvores
+      html += `<tr>
+        <td>N arvores/parcela</td>
+        <td>${formatNum(stats.nArvores.media, 1)}</td>
+        <td>${formatNum(stats.nArvores.dp, 2)}</td>
+        <td class="${cvClass(stats.nArvores.cv)}">${formatNum(stats.nArvores.cv, 1)}%</td>
+      </tr>`;
+
+      // Área basal
+      html += `<tr>
+        <td>Area basal (m&#178;/parc)</td>
+        <td>${formatNum(stats.areaBasal.media, 4)}</td>
+        <td>${formatNum(stats.areaBasal.dp, 4)}</td>
+        <td class="${cvClass(stats.areaBasal.cv)}">${formatNum(stats.areaBasal.cv, 1)}%</td>
+      </tr>`;
+
+      // Altura (se disponível)
+      if (stats.altura) {
+        html += `<tr>
+          <td>Altura media (m/parc)</td>
+          <td>${formatNum(stats.altura.media, 1)}</td>
+          <td>${formatNum(stats.altura.dp, 2)}</td>
+          <td class="${cvClass(stats.altura.cv)}">${formatNum(stats.altura.cv, 1)}%</td>
+        </tr>`;
+      }
+
+      html += '</tbody></table>';
+
+      // Erro amostral
+      html += '<div class="stats-error-row">';
+      html += '<strong>Erro amostral (&#945;=0,05):</strong><br>';
+      if (stats.nArvores.erro !== null) {
+        html += `N arvores: <strong class="${cvClass(stats.nArvores.erro)}">&plusmn;${formatNum(stats.nArvores.erro, 1)}%</strong> &nbsp; `;
+      }
+      if (stats.areaBasal.erro !== null) {
+        html += `Area basal: <strong class="${cvClass(stats.areaBasal.erro)}">&plusmn;${formatNum(stats.areaBasal.erro, 1)}%</strong> &nbsp; `;
+      }
+      if (stats.altura && stats.altura.erro !== null) {
+        html += `Altura: <strong class="${cvClass(stats.altura.erro)}">&plusmn;${formatNum(stats.altura.erro, 1)}%</strong>`;
+      }
+      html += '</div>';
+
+      content.innerHTML = html;
+    }
+
+    let statsExpanded = false;
+    function toggleStats() {
+      statsExpanded = !statsExpanded;
+      document.getElementById('statsBody').classList.toggle('expanded', statsExpanded);
+      document.getElementById('statsToggle').classList.toggle('expanded', statsExpanded);
+    }
+
     // Configura ordenação na tabela de árvores
     setupSortListeners();
   </script>

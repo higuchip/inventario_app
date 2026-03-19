@@ -10,7 +10,7 @@ Este projeto foi desenvolvido pensando nas necessidades de engenheiros florestai
 
 ## ⚠️ **Status Atual: BETA / EXPERIMENTAL** ⚠️
 
-**Data da Última Revisão Deste README:** 22 de abril de 2025
+**Data da Última Revisão Deste README:** 19 de março de 2026
 
 **ATENÇÃO:** Este aplicativo está em fase de desenvolvimento e testes (Beta). **NÃO HÁ GARANTIAS** de funcionamento perfeito ou de preservação dos dados inseridos. Podem ocorrer bugs, perda de dados ou comportamento inesperado.
 
@@ -30,6 +30,7 @@ Este projeto foi desenvolvido pensando nas necessidades de engenheiros florestai
 * **Instalável (PWA):** Adicione o aplicativo à tela inicial do seu dispositivo (Android/iOS/Desktop) para acesso rápido e experiência de app nativo (sem barra de navegador).
 * **Interface Adaptada para Instalação:** Botão inteligente (`install-button.js`) que oferece a opção de instalar (Android/Desktop) ou adicionar à tela inicial (iOS) com instruções claras.
 * **Visualização e Edição:** Consulte, edite ou exclua dados de árvores e projetos registrados.
+* **Estatísticas do Inventário:** Painel colapsável na tela de visualização com resumo estatístico por projeto: total de árvores, parcelas, espécies, CV (Coeficiente de Variação) do número de árvores/parcela, área basal/parcela e altura média/parcela, além do erro amostral (α=0,05) com t de Student. Cores indicam a qualidade da amostragem (verde ≤20%, amarelo 20-30%, vermelho >30%).
 * **Exportação de Dados:** Exporte os dados das árvores de um projeto para um arquivo CSV (separado por ponto e vírgula, codificação UTF-8), compatível com planilhas (Excel, Google Sheets, LibreOffice Calc) e softwares de análise.
 * **Importação de Dados:** Importe registros de árvores a partir de um arquivo CSV (mesmo formato de exportação); duplicatas de ID de Árvore são ignoradas e o sistema exibe resumo de importação (novos, duplicatas e linhas inválidas).
 
@@ -140,6 +141,7 @@ Após acessar ou instalar o aplicativo:
 
 * Você chegará aqui ao clicar em "Ver Árvores".
 * **Informações do Projeto:** O nome do projeto atual é exibido no topo.
+* **Estatísticas do Projeto:** Um painel colapsável exibe resumo estatístico: total de árvores/parcelas/espécies, CV e erro amostral do N de árvores/parcela, área basal/parcela e altura média/parcela. Clique no header "Estatísticas do Projeto" para expandir/recolher.
 * **Tabela de Árvores:** Lista todas as árvores do projeto com seus dados. O CAP exibe a contagem de troncos se for múltiplo.
 * **Ações Principais:**
     * `+ Nova Árvore`: Atalho para ir à tela de cadastro (`inventory.html`) para este projeto.
@@ -190,6 +192,7 @@ Após acessar ou instalar o aplicativo:
 ## Planos Futuros (Ideias)
 
 * (Implementado) Importação de dados CSV com verificação de duplicatas e relatório de importação.
+* (Implementado) Painel de estatísticas com CV, área basal e erro amostral.
 * Melhorias na interface e usabilidade (UX/UI).
 * Visualização de parcelas em mapa interativo.
 * Validações de dados mais avançadas.
