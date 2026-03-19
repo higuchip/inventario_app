@@ -374,7 +374,7 @@
     }
 
     .stats-body.expanded {
-      max-height: 800px;
+      max-height: 2000px;
     }
 
     .stats-body-inner {
@@ -1154,53 +1154,40 @@
       function media(arr) {
         return arr.length === 0 ? 0 : arr.reduce((s, v) => s + v, 0) / arr.length;
       }
-      function desvioPadrao(arr) {
+      function variancia(arr) {
         if (arr.length < 2) return 0;
         const m = media(arr);
-        const sumSq = arr.reduce((s, v) => s + Math.pow(v - m, 2), 0);
-        return Math.sqrt(sumSq / (arr.length - 1));
+        return arr.reduce((s, v) => s + Math.pow(v - m, 2), 0) / (arr.length - 1);
       }
-      function cv(arr) {
-        const m = media(arr);
-        if (m === 0) return 0;
-        return (desvioPadrao(arr) / m) * 100;
+      function desvioPadrao(arr) {
+        return Math.sqrt(variancia(arr));
       }
-      function erroAmostral(arr) {
+      function calcCompleto(arr, label) {
         const n = arr.length;
-        if (n < 2) return null;
-        const dp = desvioPadrao(arr);
         const m = media(arr);
-        if (m === 0) return null;
-        const t = getTValue(n - 1);
-        if (!t) return null;
-        const erroPct = (t * dp / (Math.sqrt(n) * m)) * 100;
-        return erroPct;
+        const s2 = variancia(arr);
+        const s = Math.sqrt(s2);
+        const cvPct = m !== 0 ? (s / m) * 100 : 0;
+        const s2media = n > 0 ? s2 / n : 0;
+        const sMedia = Math.sqrt(s2media);
+        const t = n >= 2 ? getTValue(n - 1) : null;
+        const erroAbs = t !== null ? t * sMedia : null;
+        const erroRel = (t !== null && m !== 0) ? (erroAbs / m) * 100 : null;
+        // N ótimo para erro máximo de 20%: n_otimo = (t * s / (0.20 * x̄))²
+        const nOtimo = (t !== null && m !== 0) ? Math.ceil(Math.pow((t * s) / (0.20 * m), 2)) : null;
+        const suficiente = erroRel !== null ? erroRel <= 20 : null;
+
+        return { label, n, media: m, variancia: s2, dp: s, cv: cvPct, varMedia: s2media, erPadMedia: sMedia, t, erroAbs, erroRel, nOtimo, suficiente };
       }
 
-      return {
-        totalArvores,
-        nParcelas,
-        nEspecies,
-        troncoMultiplo,
-        nArvores: {
-          media: media(nPorParcela),
-          dp: desvioPadrao(nPorParcela),
-          cv: cv(nPorParcela),
-          erro: erroAmostral(nPorParcela)
-        },
-        areaBasal: {
-          media: media(gPorParcela),
-          dp: desvioPadrao(gPorParcela),
-          cv: cv(gPorParcela),
-          erro: erroAmostral(gPorParcela)
-        },
-        altura: temAltura && altPorParcela.length >= 2 ? {
-          media: media(altPorParcela),
-          dp: desvioPadrao(altPorParcela),
-          cv: cv(altPorParcela),
-          erro: erroAmostral(altPorParcela)
-        } : null
-      };
+      const variaveis = [];
+      variaveis.push(calcCompleto(nPorParcela, 'N arvores/parcela'));
+      variaveis.push(calcCompleto(gPorParcela, 'Area basal (m\u00B2/parcela)'));
+      if (temAltura && altPorParcela.length >= 2) {
+        variaveis.push(calcCompleto(altPorParcela, 'Altura media (m/parcela)'));
+      }
+
+      return { totalArvores, nParcelas, nEspecies, troncoMultiplo, variaveis };
     }
 
     function cvClass(val) {
@@ -1234,58 +1221,43 @@
       html += '</div>';
 
       if (stats.nParcelas < 2) {
-        html += '<div class="stats-empty">CV e erro amostral requerem pelo menos 2 parcelas.</div>';
+        html += '<div class="stats-empty">Analise estatistica requer pelo menos 2 parcelas.</div>';
         content.innerHTML = html;
         return;
       }
 
-      // Tabela de CV
-      html += '<table class="stats-table">';
-      html += '<thead><tr><th>Variavel</th><th>Media/parc</th><th>DP</th><th>CV (%)</th></tr></thead>';
-      html += '<tbody>';
+      // Tabela completa IMA para cada variável
+      stats.variaveis.forEach(v => {
+        html += `<div style="margin-bottom:20px;">`;
+        html += `<h4 style="margin:0 0 8px 0;font-size:15px;color:var(--primary-dark);">${escapeHtml(v.label)}</h4>`;
+        html += '<table class="stats-table">';
+        html += '<tbody>';
+        html += `<tr><td>Media (x&#772;)</td><td style="text-align:right;">${formatNum(v.media, 4)}</td></tr>`;
+        html += `<tr><td>Variancia (s&#178;)</td><td style="text-align:right;">${formatNum(v.variancia, 6)}</td></tr>`;
+        html += `<tr><td>Desvio Padrao (s)</td><td style="text-align:right;">${formatNum(v.dp, 4)}</td></tr>`;
+        html += `<tr><td>Coeficiente de Variacao (%)</td><td style="text-align:right;" class="${cvClass(v.cv)}">${formatNum(v.cv, 2)}%</td></tr>`;
+        html += `<tr><td>Variancia da Media (s&#178;<sub>x&#772;</sub>)</td><td style="text-align:right;">${formatNum(v.varMedia, 6)}</td></tr>`;
+        html += `<tr><td>Erro Padrao da Media (s<sub>x&#772;</sub>)</td><td style="text-align:right;">${formatNum(v.erPadMedia, 4)}</td></tr>`;
+        html += `<tr><td>t tabelado (95%, gl=${v.n - 1})</td><td style="text-align:right;">${v.t !== null ? formatNum(v.t, 3) : '-'}</td></tr>`;
+        html += `<tr><td>Erro de Amostragem Absoluto</td><td style="text-align:right;">${formatNum(v.erroAbs, 4)}</td></tr>`;
+        html += `<tr><td>Erro de Amostragem Relativo (%)</td><td style="text-align:right;" class="${v.erroRel !== null ? cvClass(v.erroRel) : ''}">${v.erroRel !== null ? formatNum(v.erroRel, 2) + '%' : '-'}</td></tr>`;
+        html += `<tr><td>N&#186; otimo de parcelas (E&#8804;20%)</td><td style="text-align:right;">${v.nOtimo !== null ? v.nOtimo : '-'}</td></tr>`;
+        html += '</tbody></table>';
 
-      // N árvores
-      html += `<tr>
-        <td>N arvores/parcela</td>
-        <td>${formatNum(stats.nArvores.media, 1)}</td>
-        <td>${formatNum(stats.nArvores.dp, 2)}</td>
-        <td class="${cvClass(stats.nArvores.cv)}">${formatNum(stats.nArvores.cv, 1)}%</td>
-      </tr>`;
+        // Indicador de suficiência amostral
+        if (v.suficiente !== null) {
+          if (v.suficiente) {
+            html += `<div style="margin-top:8px;padding:8px 12px;border-radius:var(--border-radius);background-color:rgba(46,125,50,0.08);color:var(--primary-dark);font-size:14px;font-weight:500;">&#10003; Suficiencia amostral atendida (erro ${formatNum(v.erroRel, 1)}% &#8804; 20%, p=0,95)</div>`;
+          } else {
+            const faltam = v.nOtimo !== null ? v.nOtimo - v.n : '?';
+            html += `<div style="margin-top:8px;padding:8px 12px;border-radius:var(--border-radius);background-color:rgba(211,47,47,0.08);color:var(--error-color);font-size:14px;font-weight:500;">&#10007; Suficiencia amostral NAO atendida (erro ${formatNum(v.erroRel, 1)}% &gt; 20%). Necessarias ${v.nOtimo !== null ? v.nOtimo : '?'} parcelas (faltam ${faltam}).</div>`;
+          }
+        }
+        html += '</div>';
+      });
 
-      // Área basal
-      html += `<tr>
-        <td>Area basal (m&#178;/parc)</td>
-        <td>${formatNum(stats.areaBasal.media, 4)}</td>
-        <td>${formatNum(stats.areaBasal.dp, 4)}</td>
-        <td class="${cvClass(stats.areaBasal.cv)}">${formatNum(stats.areaBasal.cv, 1)}%</td>
-      </tr>`;
-
-      // Altura (se disponível)
-      if (stats.altura) {
-        html += `<tr>
-          <td>Altura media (m/parc)</td>
-          <td>${formatNum(stats.altura.media, 1)}</td>
-          <td>${formatNum(stats.altura.dp, 2)}</td>
-          <td class="${cvClass(stats.altura.cv)}">${formatNum(stats.altura.cv, 1)}%</td>
-        </tr>`;
-      }
-
-      html += '</tbody></table>';
-
-      // Erro amostral
-      html += '<div class="stats-error-row">';
-      html += '<strong>Erro amostral (&#945;=0,05) &mdash; AAS:</strong><br>';
-      if (stats.nArvores.erro !== null) {
-        html += `N arvores: <strong class="${cvClass(stats.nArvores.erro)}">&plusmn;${formatNum(stats.nArvores.erro, 1)}%</strong> &nbsp; `;
-      }
-      if (stats.areaBasal.erro !== null) {
-        html += `Area basal: <strong class="${cvClass(stats.areaBasal.erro)}">&plusmn;${formatNum(stats.areaBasal.erro, 1)}%</strong> &nbsp; `;
-      }
-      if (stats.altura && stats.altura.erro !== null) {
-        html += `Altura: <strong class="${cvClass(stats.altura.erro)}">&plusmn;${formatNum(stats.altura.erro, 1)}%</strong>`;
-      }
-      html += '<br><span style="font-size:12px;color:var(--text-light);">Calculado por Amostragem Aleatoria Simples (AAS), sem fator de correcao para populacao finita.</span>';
-      html += '</div>';
+      // Nota metodológica
+      html += '<div style="font-size:12px;color:var(--text-light);margin-top:12px;padding-top:12px;border-top:1px solid var(--border-color);">Amostragem Aleatoria Simples (AAS), sem fator de correcao para populacao finita. Limite de erro admissivel: 20% com 95% de probabilidade.</div>';
 
       content.innerHTML = html;
     }
