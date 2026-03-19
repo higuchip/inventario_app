@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -474,10 +474,6 @@
       }
     });
     
-    // Adiciona um listener para pagehide
-    window.addEventListener('pagehide', function(event) {
-    });
-
     // Adiciona um listener para pageshow
     window.addEventListener('pageshow', function(event) {
       let dbSeemsValid = false;
@@ -535,11 +531,22 @@
       // Tenta abrir o DB
       const request = indexedDB.open('InventarioDB', 1);
 
+      request.onupgradeneeded = function(event) {
+        const upgradeDb = event.target.result;
+        if (!upgradeDb.objectStoreNames.contains('projetos')) {
+          upgradeDb.createObjectStore('projetos', { keyPath: 'id', autoIncrement: true });
+        }
+        if (!upgradeDb.objectStoreNames.contains('arvores')) {
+          const arvoresStore = upgradeDb.createObjectStore('arvores', { keyPath: 'id', autoIncrement: true });
+          arvoresStore.createIndex('projetoId', 'projetoId', { unique: false });
+        }
+      };
+
       request.onerror = function(event) {
         console.error('Erro ao abrir IndexedDB:', event.target.error);
         alert('Não foi possível conectar ao banco de dados local. Sugestões podem ser limitadas.');
         todasEspecies = [...especiesComuns];
-        setupAutocompleteListeners(); 
+        setupAutocompleteListeners();
       };
 
       request.onsuccess = function(event) {
@@ -635,47 +642,44 @@
         });
       }
       
-      if (matches.length > 0 || !filter) {
-           autocompleteList.style.display = 'block';
-      } else if (filter && matches.length === 0) {
-           autocompleteList.style.display = 'block';
-      }
+      autocompleteList.style.display = 'block';
     }
     
-    function setupAutocompleteListeners() {
-        const oldInput = document.getElementById('especie');
+    // Referências persistentes para os handlers (permite removeEventListener correto)
+    let _handleInput = null;
+    let _handleClickOutside = null;
 
-        const handleFocus = () => {
-        };
-        const handleInput = () => {
+    function setupAutocompleteListeners() {
+        if (!especieInput) {
+            console.error('Erro: especieInput não definido ao tentar adicionar listeners!');
+            return;
+        }
+
+        // Remove listeners antigos se existirem
+        if (_handleInput) {
+            especieInput.removeEventListener('input', _handleInput);
+        }
+        if (_handleClickOutside) {
+            document.removeEventListener('click', _handleClickOutside);
+        }
+
+        // Cria e armazena novas referências
+        _handleInput = () => {
             if (especieInput.value.trim() !== '') {
                 showSuggestions(especieInput.value);
             } else {
                 autocompleteList.style.display = 'none';
             }
         };
-        const handleClickOutside = (event) => {
+        _handleClickOutside = (event) => {
             if (!especieInput.contains(event.target) && !autocompleteList.contains(event.target)) {
-                if (autocompleteList.style.display !== 'none') {
-                    autocompleteList.style.display = 'none';
-                }
+                autocompleteList.style.display = 'none';
             }
         };
 
-        if (oldInput) {
-             oldInput.removeEventListener('focus', handleFocus);
-             oldInput.removeEventListener('input', handleInput);
-        }
-        document.removeEventListener('click', handleClickOutside);
-
-        if (especieInput) {
-            especieInput.addEventListener('focus', handleFocus);
-            especieInput.addEventListener('input', handleInput);
-            document.addEventListener('click', handleClickOutside);
-            autocompleteSetupDone = true;
-        } else {
-             console.error('Erro: especieInput não definido ao tentar adicionar listeners!');
-        }
+        especieInput.addEventListener('input', _handleInput);
+        document.addEventListener('click', _handleClickOutside);
+        autocompleteSetupDone = true;
     }
     
     function loadSpeciesSuggestions() {
@@ -772,6 +776,17 @@
       }
     }
     
+    // Função para escapar HTML e prevenir XSS
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function showToast(message, type = 'success') {
       console.log(`showToast -> Chamada com: "${message}", Tipo: ${type}`); // Log Toast 1
       
@@ -792,7 +807,7 @@
       
       toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
-        <div class="toast-content">${message}</div>
+        <div class="toast-content">${escapeHtml(message)}</div>
         <button class="toast-close" onclick="this.parentElement.remove()">×</button>
       `;
       
@@ -989,6 +1004,12 @@
                       loadSpeciesSuggestions();
                       document.getElementById('treeForm').reset();
                       document.getElementById('save-update-btn').textContent = 'Salvar Árvore';
+                      // Resetar estado de tronco múltiplo
+                      document.getElementById('troncoMultiplo').checked = false;
+                      document.getElementById('troncoMultiploContainer').style.display = 'none';
+                      document.getElementById('cap').disabled = false;
+                      document.getElementById('capsContainer').innerHTML = '';
+                      document.getElementById('capEquivalente').textContent = '0';
                     } else {
                       setTimeout(() => window.location.href = 'view_trees.html', 1500);
                     }

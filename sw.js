@@ -1,5 +1,5 @@
 // Versão do cache; incremente para forçar limpeza de cache e atualização do Service Worker
-const CACHE_NAME = 'forest-inventory-v2';
+const CACHE_NAME = 'forest-inventory-v3';
 const urlsToCache = [
   '.',
   'index.html',
@@ -9,7 +9,9 @@ const urlsToCache = [
   'style.css',
   'manifest.json',
   'icon-192x192.png',
-  'icon-512x512.png'
+  'icon-512x512.png',
+  'install-button.js',
+  'consent-banner.js'
 ];
 
 // Instalação do Service Worker

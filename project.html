@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Projetos - Planilha Florestal</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <script src="install-button.js"></script>
   <script src="consent-banner.js"></script>
@@ -504,6 +504,17 @@
   </div>
 
   <script>
+    // Função para escapar HTML e prevenir XSS
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // Função para mostrar notificações toast
     function showToast(message, type = 'success') {
       const toastContainer = document.getElementById('toastContainer');
@@ -514,7 +525,7 @@
       
       toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
-        <div class="toast-content">${message}</div>
+        <div class="toast-content">${escapeHtml(message)}</div>
         <button class="toast-close" onclick="this.parentElement.remove()">×</button>
       `;
       
@@ -599,25 +610,25 @@
           
           projectItem.innerHTML = `
             <div class="project-info">
-              <h3>${project.area} - ${project.ano}</h3>
-              
+              <h3>${escapeHtml(project.area)} - ${escapeHtml(project.ano)}</h3>
+
               <div class="project-meta">
                 <span class="meta-item">
-                  <span class="meta-icon">📅</span> ${formattedDate}
+                  <span class="meta-icon">📅</span> ${escapeHtml(formattedDate)}
                 </span>
                 <span class="meta-item">
-                  <span class="meta-icon">🌲</span> ${treeCount} árvores
+                  <span class="meta-icon">🌲</span> ${parseInt(treeCount)} árvores
                 </span>
               </div>
             </div>
             <div class="project-actions">
-              <button class="inventory-btn" onclick="goToInventory(${project.id})">
+              <button class="inventory-btn" onclick="goToInventory(${parseInt(project.id)})">
                 <i class="icon">📝</i> Adicionar Árvore
               </button>
-              <button class="view-trees-btn" onclick="goToViewTrees(${project.id})">
+              <button class="view-trees-btn" onclick="goToViewTrees(${parseInt(project.id)})">
                 <i class="icon">🔍</i> Ver Árvores
               </button>
-              <button class="delete-btn" onclick="deleteProject(${project.id})">
+              <button class="delete-btn" onclick="deleteProject(${parseInt(project.id)})">
                 <i class="icon">🗑️</i> Excluir
               </button>
             </div>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -447,6 +447,17 @@
     let sortDir = 'asc';
     const request = indexedDB.open('InventarioDB', 1);
 
+    // Função para escapar HTML e prevenir XSS
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // Função para mostrar notificações toast
     function showToast(message, type = 'success') {
       const toastContainer = document.getElementById('toastContainer');
@@ -457,7 +468,7 @@
       
       toast.innerHTML = `
         <span class="toast-icon">${icon}</span>
-        <div class="toast-content">${message}</div>
+        <div class="toast-content">${escapeHtml(message)}</div>
         <button class="toast-close" onclick="this.parentElement.remove()">×</button>
       `;
       
@@ -470,6 +481,17 @@
       }, 5000);
     }
 
+    request.onupgradeneeded = function(event) {
+      const upgradeDb = event.target.result;
+      if (!upgradeDb.objectStoreNames.contains('projetos')) {
+        upgradeDb.createObjectStore('projetos', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!upgradeDb.objectStoreNames.contains('arvores')) {
+        const arvoresStore = upgradeDb.createObjectStore('arvores', { keyPath: 'id', autoIncrement: true });
+        arvoresStore.createIndex('projetoId', 'projetoId', { unique: false });
+      }
+    };
+
     request.onerror = function(event) {
       console.error('Erro ao abrir o banco de dados:', event.target.error);
       showToast('Não foi possível iniciar o banco de dados local.', 'error');
@@ -479,12 +501,13 @@
       db = event.target.result;
       console.log('Banco de dados aberto com sucesso');
 
-      currentProjectId = localStorage.getItem('currentProjectId');
-      if (!currentProjectId) {
+      const rawProjectId = localStorage.getItem('currentProjectId');
+      if (!rawProjectId || isNaN(parseInt(rawProjectId))) {
         showToast('Nenhum projeto selecionado. Redirecionando...', 'warning');
         setTimeout(() => window.location.href = 'project.html', 2000);
         return;
       }
+      currentProjectId = parseInt(rawProjectId);
 
       loadProjectInfo();
       loadTrees();
@@ -493,7 +516,7 @@
     function loadProjectInfo() {
       const transaction = db.transaction(['projetos'], 'readonly');
       const store = transaction.objectStore('projetos');
-      const request = store.get(parseInt(currentProjectId));
+      const request = store.get(currentProjectId);
 
       request.onsuccess = function() {
         const projeto = request.result;
@@ -512,7 +535,7 @@
       const transaction = db.transaction(['arvores'], 'readonly');
       const store = transaction.objectStore('arvores');
       const index = store.index('projetoId');
-      const request = index.getAll(parseInt(currentProjectId));
+      const request = index.getAll(currentProjectId);
 
       request.onsuccess = function() {
         // Armazena localmente e renderiza a tabela com ordenação
@@ -585,17 +608,17 @@
       list.forEach(arvore => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${arvore.parcela}</td>
-          <td>${arvore.idArvoreUsuario || '-'}</td>
-          <td>${arvore.especie}</td>
+          <td>${escapeHtml(arvore.parcela)}</td>
+          <td>${escapeHtml(arvore.idArvoreUsuario) || '-'}</td>
+          <td>${escapeHtml(arvore.especie)}</td>
           <td>${formatCapDisplay(arvore)}</td>
-          <td>${arvore.altura || '-'}</td>
-          <td>${arvore.coordenadas || '-'}</td>
-          <td>${new Date(arvore.dataRegistro).toLocaleString()}</td>
-          <td>${arvore.observacao || '-'}</td>
+          <td>${arvore.altura != null ? escapeHtml(arvore.altura) : '-'}</td>
+          <td>${escapeHtml(arvore.coordenadas) || '-'}</td>
+          <td>${escapeHtml(new Date(arvore.dataRegistro).toLocaleString())}</td>
+          <td>${escapeHtml(arvore.observacao) || '-'}</td>
           <td>
-            <button class="action-btn edit-btn" onclick="editTree(${arvore.id})"><i class="icon">✎</i> Editar</button>
-            <button class="action-btn delete-btn" onclick="deleteTree(${arvore.id})"><i class="icon">✕</i> Excluir</button>
+            <button class="action-btn edit-btn" onclick="editTree(${parseInt(arvore.id)})"><i class="icon">✎</i> Editar</button>
+            <button class="action-btn delete-btn" onclick="deleteTree(${parseInt(arvore.id)})"><i class="icon">✕</i> Excluir</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -627,7 +650,7 @@
       const transaction = db.transaction(['arvores'], 'readonly');
       const store = transaction.objectStore('arvores');
       const index = store.index('projetoId');
-      const projectId = parseInt(currentProjectId);
+      const projectId = currentProjectId;
       const request = index.getAll(projectId);
 
       request.onsuccess = function() {
@@ -643,11 +666,21 @@
         // Cabeçalho do CSV
         csvContent += 'Parcela;ID Árvore;Espécie;CAP;Tronco Múltiplo;CAPs Individuais;Altura;Latitude;Longitude;Data de Registro;Observação\n';
 
+        // Função para escapar campo CSV (ponto-e-vírgula, aspas, quebras de linha)
+        function escapeCsvField(val) {
+          if (val === null || val === undefined) return '';
+          const str = String(val);
+          if (str.includes(';') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+            return '"' + str.replace(/"/g, '""') + '"';
+          }
+          return str;
+        }
+
         // Adiciona cada árvore como uma linha no CSV
         arvores.forEach(arvore => {
           const cap = arvore.cap ? arvore.cap.toString().replace('.', ',') : '';
           const altura = arvore.altura ? arvore.altura.toString().replace('.', ',') : '';
-          
+
           // Extrai latitude e longitude das coordenadas
           let latitude = '', longitude = '';
           if (arvore.coordenadas) {
@@ -662,18 +695,24 @@
           const isTroncoMultiplo = arvore.troncoMultiplo ? 'Sim' : 'Não';
           let capsIndividuais = '';
           if (arvore.troncoMultiplo && Array.isArray(arvore.capsIndividuais) && arvore.capsIndividuais.length > 0) {
-            // Usa '+' como operador para múltiplos troncos
-            capsIndividuais = '"' + arvore.capsIndividuais.map(c => c.toString().replace('.', ',')).join(' + ') + '"';
+            capsIndividuais = arvore.capsIndividuais.map(c => c.toString().replace('.', ',')).join(' + ');
           }
 
           const dataRegistro = arvore.dataRegistro ? new Date(arvore.dataRegistro).toLocaleString() : '';
-          const observacao = arvore.observacao || '';
 
-          // Garante que strings com ponto e vírgula sejam envolvidas em aspas duplas
-          const especie = arvore.especie.includes(';') ? `"${arvore.especie}"` : arvore.especie;
-          const obsFormatada = observacao.includes(';') ? `"${observacao}"` : observacao;
-
-          csvContent += `${arvore.parcela};${arvore.idArvoreUsuario || ''};${especie};${cap};${isTroncoMultiplo};${capsIndividuais};${altura};${latitude};${longitude};${dataRegistro};${obsFormatada}\n`;
+          csvContent += [
+            escapeCsvField(arvore.parcela),
+            escapeCsvField(arvore.idArvoreUsuario || ''),
+            escapeCsvField(arvore.especie),
+            escapeCsvField(cap),
+            escapeCsvField(isTroncoMultiplo),
+            escapeCsvField(capsIndividuais),
+            escapeCsvField(altura),
+            escapeCsvField(latitude),
+            escapeCsvField(longitude),
+            escapeCsvField(dataRegistro),
+            escapeCsvField(arvore.observacao || '')
+          ].join(';') + '\n';
         });
 
         // Cria o arquivo e faz o download com encoding UTF-8
@@ -832,6 +871,14 @@
           const longitude = cols[8].replace(',', '.').trim();
           const observacao = cols[10] || '';
           const coordenadas = (latitude && longitude) ? (latitude + ', ' + longitude) : null;
+          // Preservar data de registro original do CSV quando disponível
+          let dataRegistro = new Date().toISOString();
+          if (cols[9] && cols[9].trim()) {
+            const parsedDate = new Date(cols[9].trim());
+            if (!isNaN(parsedDate.getTime())) {
+              dataRegistro = parsedDate.toISOString();
+            }
+          }
           const arvore = {
             parcela: parcela,
             idArvoreUsuario: idArvoreUsuario,
@@ -842,8 +889,8 @@
             altura: altura,
             coordenadas: coordenadas,
             observacao: observacao,
-            projetoId: parseInt(currentProjectId, 10),
-            dataRegistro: new Date().toISOString()
+            projetoId: currentProjectId,
+            dataRegistro: dataRegistro
           };
           writeStore.add(arvore);
           importedCount++;
@@ -858,10 +905,10 @@
 
     function formatCapDisplay(arvore) {
       if (arvore.troncoMultiplo && Array.isArray(arvore.capsIndividuais) && arvore.capsIndividuais.length > 0) {
-        const capsText = arvore.capsIndividuais.join(', ');
-        return `<span title="CAPs individuais: ${capsText}">${arvore.cap} (troncos: ${arvore.capsIndividuais.length})</span>`;
+        const capsText = arvore.capsIndividuais.map(c => parseFloat(c) || 0).join(', ');
+        return `<span title="CAPs individuais: ${escapeHtml(capsText)}">${escapeHtml(arvore.cap)} (troncos: ${parseInt(arvore.capsIndividuais.length)})</span>`;
       } else if (arvore.cap) {
-        return arvore.cap.toString();
+        return escapeHtml(arvore.cap);
       } else {
         return '-';
       }
