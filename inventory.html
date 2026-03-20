@@ -606,6 +606,7 @@
     let especieInput;
     let autocompleteList;
     let currentParcela = null;
+    let originalDataRegistro = null;
     
     // Função principal de inicialização
     function initializeApp() {
@@ -840,7 +841,9 @@
           document.getElementById('altura').value = arvore.altura || '';
           document.getElementById('coordenadas').value = arvore.coordenadas || '';
           document.getElementById('observacao').value = arvore.observacao || '';
+          originalDataRegistro = arvore.dataRegistro || arvore.date_added || null;
           document.getElementById('save-update-btn').textContent = 'Atualizar Árvore';
+          document.getElementById('save-update-btn').disabled = false;
 
           // Travar parcela no modo edição (somente leitura)
           if (arvore.parcela) {
@@ -1187,7 +1190,7 @@
                     coordenadas: document.getElementById('coordenadas').value || null,
                     observacao: document.getElementById('observacao').value || null,
                     projetoId: currentProjectId,
-                    dataRegistro: new Date().toISOString(),
+                    dataRegistro: (currentTreeId && originalDataRegistro) ? originalDataRegistro : new Date().toISOString(),
                     troncoMultiplo: isTroncoMultiplo,
                     capsIndividuais: isTroncoMultiplo ? capsIndividuais : []
                   };

@@ -1,5 +1,5 @@
 // Versão do cache; incremente para forçar limpeza de cache e atualização do Service Worker
-const CACHE_NAME = 'forest-inventory-v8';
+const CACHE_NAME = 'forest-inventory-v9';
 const urlsToCache = [
   '.',
   'index.html',
