@@ -10,7 +10,7 @@ Este projeto foi desenvolvido pensando nas necessidades de engenheiros florestai
 
 ## ⚠️ **Status Atual: BETA / EXPERIMENTAL** ⚠️
 
-**Data da Última Revisão Deste README:** 19 de março de 2026
+**Data da Última Revisão Deste README:** 20 de março de 2026
 
 **ATENÇÃO:** Este aplicativo está em fase de desenvolvimento e testes (Beta). **NÃO HÁ GARANTIAS** de funcionamento perfeito ou de preservação dos dados inseridos. Podem ocorrer bugs, perda de dados ou comportamento inesperado.
 
@@ -23,14 +23,15 @@ Este projeto foi desenvolvido pensando nas necessidades de engenheiros florestai
 ## Funcionalidades Principais
 
 * **Gerenciamento de Projetos:** Crie e organize inventários por área e ano.
-* **Coleta Detalhada de Árvores:** Registre parcela, ID customizável da árvore, espécie (com autocomplete), CAP (Circunferência à Altura do Peito - suporta cálculo para múltiplos troncos), altura, coordenadas GPS e observações.
+* **Fluxo de Inserção por Parcela:** Selecione ou crie a parcela uma vez e cadastre todas as árvores sem precisar redigitar. A parcela fica travada como contexto de sessão, com contador de árvores e opção de trocar. Ideal para trabalho sequencial em campo.
+* **Coleta Detalhada de Árvores:** Registre ID customizável da árvore, espécie (com autocomplete), CAP (Circunferência à Altura do Peito - suporta cálculo para múltiplos troncos), altura, coordenadas GPS e observações.
 * **Geolocalização:** Obtenha coordenadas GPS diretamente pelo dispositivo (requer permissão do usuário e sinal de GPS).
 * **Armazenamento 100% Offline:** Todos os dados de projetos e árvores são salvos localmente no dispositivo usando IndexedDB.
 * **Funcionamento Offline:** O aplicativo pode ser usado sem conexão com a internet após ser carregado e instalado (PWA com Service Worker).
 * **Instalável (PWA):** Adicione o aplicativo à tela inicial do seu dispositivo (Android/iOS/Desktop) para acesso rápido e experiência de app nativo (sem barra de navegador).
 * **Interface Adaptada para Instalação:** Botão inteligente (`install-button.js`) que oferece a opção de instalar (Android/Desktop) ou adicionar à tela inicial (iOS) com instruções claras.
 * **Visualização e Edição:** Consulte, edite ou exclua dados de árvores e projetos registrados.
-* **Estatísticas do Inventário:** Painel colapsável na tela de visualização com resumo estatístico por projeto: total de árvores, parcelas, espécies, CV (Coeficiente de Variação) do número de árvores/parcela, área basal/parcela e altura média/parcela, além do erro amostral (α=0,05) com t de Student. Cores indicam a qualidade da amostragem (verde ≤20%, amarelo 20-30%, vermelho >30%).
+* **Estatísticas do Inventário (padrão IMA):** Painel colapsável na tela de visualização com cards por variável (N árvores/parcela, Área Basal/parcela, Altura média/parcela). Cada card exibe CV (%), Erro Amostral Relativo (%), número de parcelas atual e número ótimo necessário, com indicação visual de suficiência amostral (✓/✗). O cálculo assume **Amostragem Aleatória Simples (AAS)** com 95% de probabilidade e limite de erro de 20%, conforme frequentemente exigido pelo IMA para supressão de vegetação. Layout em cards otimizado para uso em celular no campo.
 * **Exportação de Dados:** Exporte os dados das árvores de um projeto para um arquivo CSV (separado por ponto e vírgula, codificação UTF-8), compatível com planilhas (Excel, Google Sheets, LibreOffice Calc) e softwares de análise.
 * **Importação de Dados:** Importe registros de árvores a partir de um arquivo CSV (mesmo formato de exportação); duplicatas de ID de Árvore são ignoradas e o sistema exibe resumo de importação (novos, duplicatas e linhas inválidas).
 
@@ -55,7 +56,7 @@ Este projeto foi desenvolvido pensando nas necessidades de engenheiros florestai
 
 * `index.html`: Tela inicial (splash screen) que redireciona para os projetos. Registra o Service Worker.
 * `project.html`: Página principal para visualizar, criar e gerenciar projetos de inventário. Usa o `<install-button>`.
-* `inventory.html`: Formulário para cadastrar ou editar informações de uma árvore específica (CAP, espécie, GPS, etc.). Inclui lógica para múltiplos troncos e autocomplete de espécies.
+* `inventory.html`: Formulário para cadastrar ou editar informações de uma árvore específica (CAP, espécie, GPS, etc.). Inclui fluxo de inserção por parcela com sessão persistente, lógica para múltiplos troncos e autocomplete de espécies.
 * `view_trees.html`: Exibe a tabela com as árvores cadastradas para um projeto, permitindo edição, exclusão e exportação para CSV.
 * `sw.js`: Service Worker responsável pelo cache dos arquivos da aplicação e pela funcionalidade offline.
 * `manifest.json`: Arquivo de manifesto do PWA, define nome, ícones, cores, modo de exibição (standalone), etc.
@@ -122,26 +123,30 @@ Após acessar ou instalar o aplicativo:
 ### 3. Cadastrando/Editando Árvores (`inventory.html`)
 
 * Você chegará aqui ao clicar em "Adicionar Árvore" ou "Editar" (na tela de visualização).
+* **Fluxo por Parcela:**
+    1.  **Selecionar Parcela:** Ao entrar, uma barra no topo solicita a parcela. Digite o nome ou selecione uma parcela existente no autocomplete, e clique "Confirmar". O formulário de árvore só é habilitado após confirmar a parcela.
+    2.  **Parcela como sessão:** A parcela fica travada (exibida como badge verde) enquanto você cadastra várias árvores. Um contador mostra quantas árvores já existem naquela parcela.
+    3.  **Trocar parcela:** Clique no botão "Trocar" na barra para selecionar outra parcela.
+    4.  **Modo edição:** Ao editar uma árvore existente, a parcela é exibida em modo somente leitura.
 * **Preenchendo os Dados:**
-    1.  **Parcela:** Identificador da unidade amostral.
-    2.  **ID da Árvore:** Um identificador único definido por você para a árvore dentro do projeto.
-    3.  **Coordenadas:** Clique em "Obter GPS" para tentar preencher automaticamente (requer permissão e sinal). O campo é somente leitura.
-    4.  **Espécie:** Digite o nome. Sugestões baseadas em espécies comuns e já usadas no projeto podem aparecer.
-    5.  **CAP (cm):** Insira a circunferência.
+    1.  **ID da Árvore:** Um identificador único definido por você para a árvore dentro do projeto.
+    2.  **Coordenadas:** Clique em "Obter GPS" para tentar preencher automaticamente (requer permissão e sinal). O campo é somente leitura.
+    3.  **Espécie:** Digite o nome. Sugestões baseadas em espécies comuns e já usadas no projeto podem aparecer.
+    4.  **CAP (cm):** Insira a circunferência.
         * **Múltiplos Troncos:** Marque a caixa "Árvore com troncos múltiplos" se aplicável. Campos para inserir o CAP de cada tronco aparecerão. O CAP equivalente será calculado e preenchido automaticamente no campo CAP principal (que fica desabilitado neste modo). Use o botão "+ Adicionar tronco" e "✕" para gerenciar os CAPs individuais.
-    6.  **Altura (m):** Insira a altura (opcional).
-    7.  **Observação:** Qualquer informação adicional.
+    5.  **Altura (m):** Insira a altura (opcional).
+    6.  **Observação:** Qualquer informação adicional.
 * **Salvando/Atualizando:**
     * Clique em "Salvar Árvore" (se for nova) ou "Atualizar Árvore" (se estiver editando).
-    * Se salvou uma nova, o formulário é limpo (exceto Parcela e ID) para facilitar o próximo cadastro.
+    * Se salvou uma nova, o formulário é limpo mas a **parcela permanece selecionada** e o foco vai para o campo ID da Árvore, permitindo cadastro rápido em sequência.
     * Se atualizou, você será redirecionado de volta para a lista (`view_trees.html`).
-* **Voltando:** Clique em "Voltar ao Projeto" para ir para `project.html`.
+* **Voltando:** Clique em "Voltar ao Projeto" para ir para `project.html` (a sessão de parcela é limpa).
 
 ### 4. Visualizando Árvores (`view_trees.html`)
 
 * Você chegará aqui ao clicar em "Ver Árvores".
 * **Informações do Projeto:** O nome do projeto atual é exibido no topo.
-* **Estatísticas do Projeto:** Um painel colapsável exibe resumo estatístico: total de árvores/parcelas/espécies, CV e erro amostral do N de árvores/parcela, área basal/parcela e altura média/parcela. Clique no header "Estatísticas do Projeto" para expandir/recolher.
+* **Estatísticas do Projeto (AAS):** Um painel colapsável exibe resumo estatístico com cards por variável (N árvores/parcela, Área Basal/parcela, Altura média/parcela). Cada card mostra CV%, Erro Amostral%, parcelas atuais vs. necessárias, e um indicador de suficiência amostral. Clique no header "Estatísticas do Projeto" para expandir/recolher.
 * **Tabela de Árvores:** Lista todas as árvores do projeto com seus dados. O CAP exibe a contagem de troncos se for múltiplo.
 * **Ações Principais:**
     * `+ Nova Árvore`: Atalho para ir à tela de cadastro (`inventory.html`) para este projeto.
@@ -191,11 +196,14 @@ Após acessar ou instalar o aplicativo:
 
 ## Planos Futuros (Ideias)
 
-* (Implementado) Importação de dados CSV com verificação de duplicatas e relatório de importação.
-* (Implementado) Painel de estatísticas com CV, área basal e erro amostral.
-* Melhorias na interface e usabilidade (UX/UI).
+* ~~Importação de dados CSV com verificação de duplicatas e relatório de importação.~~ ✅
+* ~~Painel de estatísticas com CV, área basal e erro amostral.~~ ✅
+* ~~Estatísticas no padrão IMA para supressão de vegetação (AAS, 95%, erro ≤20%).~~ ✅
+* ~~Fluxo de inserção por parcela com sessão persistente.~~ ✅
+* ~~Layout mobile otimizado para estatísticas (cards).~~ ✅
 * Visualização de parcelas em mapa interativo.
-* Validações de dados mais avançadas.
+* Suporte a outros métodos de amostragem (estratificada, sistemática).
+* Sincronização de dados entre dispositivos.
 
 ---
 
